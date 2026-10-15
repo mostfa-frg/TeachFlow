@@ -82,6 +82,7 @@ class SessionProposal(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=4000)
     duration_minutes: int = Field(ge=1, le=720)
+    learning_objectives: list[str] = Field(default_factory=list, max_length=20)
     supporting_material_ids: list[str] = Field(default_factory=list, max_length=50)
 
 
@@ -120,6 +121,7 @@ class SessionOut(ORMModel):
     sequence_index: int
     title: str
     description: str
+    learning_objectives: list[str]
     duration_minutes: int
     supporting_material_ids: list[str]
 
@@ -151,7 +153,17 @@ class RoadmapVersionOut(ORMModel):
 
 
 class ProgressUpdate(BaseModel):
-    state: Literal["upcoming", "in_progress", "completed"]
+    state: Literal["upcoming", "in_progress", "completed"] | None = None
+    completed_objective_indexes: list[int] | None = Field(default=None, max_length=20)
+
+    @field_validator("completed_objective_indexes")
+    @classmethod
+    def unique_nonnegative_indexes(cls, indexes: list[int] | None) -> list[int] | None:
+        if indexes is None:
+            return None
+        if any(index < 0 for index in indexes) or len(indexes) != len(set(indexes)):
+            raise ValueError("Objective indexes must be unique and nonnegative.")
+        return sorted(indexes)
 
 
 class ProgressOut(ORMModel):
@@ -159,4 +171,5 @@ class ProgressOut(ORMModel):
     group_id: str
     session_id: str
     state: str
+    completed_objective_indexes: list[int]
     completed_at: datetime | None
