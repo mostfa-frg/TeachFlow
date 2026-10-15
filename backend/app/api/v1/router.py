@@ -466,8 +466,27 @@ def generate_roadmap(
         ),
     }
     try:
-        proposal = anyio.run(generator.generate, context)
-        validate_roadmap(proposal, {material["id"] for material in material_context})
+        known_material_ids = {material["id"] for material in material_context}
+        proposal: RoadmapProposal | None = None
+        for attempt in range(2):
+            try:
+                candidate = anyio.run(generator.generate, context)
+                validate_roadmap(candidate, known_material_ids)
+            except InvalidRoadmap as exc:
+                if attempt == 1:
+                    raise
+                logger.info(
+                    "Retrying invalid roadmap proposal with validation feedback: %s",
+                    exc,
+                )
+                context["validation_feedback"] = str(exc)
+            else:
+                proposal = candidate
+                break
+        if proposal is None:
+            raise InvalidRoadmap(
+                "The model response could not be validated after one correction attempt."
+            )
         required_warnings = []
         if not material_context:
             required_warnings.append(

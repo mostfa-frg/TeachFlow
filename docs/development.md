@@ -9,13 +9,13 @@ Install the single dependency set from the repository root with `python -m pip i
 | `DATABASE_URL` | SQLAlchemy database connection | `sqlite:///./data/teachflow.db` |
 | `TEACHFLOW_DATA_DIR` | Local original-file and extracted-text storage root | `./data` |
 | `MAX_UPLOAD_BYTES` | Maximum upload size | `10485760` |
-| `LLM_API_KEY` | Secret for the configured OpenAI-compatible endpoint | unset |
-| `LLM_BASE_URL` | Provider API base URL | `https://api.openai.com/v1` |
-| `LLM_MODEL` | Provider model identifier | `gpt-oss-20b` |
-| `LLM_API_STYLE` | API format: `responses` or `chat_completions` | `responses` |
+| `LLM_API_KEY` | Secret for the configured OpenAI-compatible endpoint (Groq API key) | unset |
+| `LLM_BASE_URL` | Provider API base URL | `https://api.groq.com/openai/v1` |
+| `LLM_MODEL` | Provider model identifier | `openai/gpt-oss-20b` |
+| `LLM_API_STYLE` | API format: `responses` or `chat_completions` | `chat_completions` |
 | `LLM_TIMEOUT_SECONDS` | Provider request timeout | `60` |
 
-The API starts without LLM credentials. Roadmap generation then returns HTTP 503. For an OpenAI API key with `gpt-oss-20b`, use the Responses API style (the default). For an OpenAI-compatible provider using `/chat/completions`, set `LLM_API_STYLE=chat_completions` and configure its matching base URL and model ID. Use a PostgreSQL SQLAlchemy URL for deployment and install a driver such as `psycopg[binary]` separately; SQLite remains useful for a single-process local setup.
+The API starts without LLM credentials. Roadmap generation then returns HTTP 503. For Groq, set `LLM_API_KEY` to a key from GroqCloud and use the configured Groq base URL, `openai/gpt-oss-20b` model, and `chat_completions` API style. Groq applies account and model-specific rate limits; check your GroqCloud limits if requests are rejected. Other OpenAI-compatible providers can be used by setting their matching base URL, model ID, and supported API style. Use a PostgreSQL SQLAlchemy URL for deployment and install a driver such as `psycopg[binary]` separately; SQLite remains useful for a single-process local setup.
 
 ## API outline
 
