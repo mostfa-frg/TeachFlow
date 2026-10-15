@@ -184,6 +184,7 @@ class TeachingSession(TimestampMixin, Base):
     sequence_index: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
+    learning_objectives: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list, server_default=text("'[]'"))
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     supporting_material_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     roadmap_version: Mapped[RoadmapVersion] = relationship(back_populates="sessions")
@@ -238,6 +239,7 @@ class GroupSessionProgress(TimestampMixin, Base):
         ForeignKey("teaching_sessions.id", ondelete="CASCADE"), index=True
     )
     state: Mapped[str] = mapped_column(String(20), nullable=False, default="upcoming")
+    completed_objective_indexes: Mapped[list[int]] = mapped_column(JSON, nullable=False, default=list, server_default=text("'[]'"))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     group: Mapped[InstructorGroup] = relationship(back_populates="progress")
     session: Mapped[TeachingSession] = relationship(back_populates="progress")
