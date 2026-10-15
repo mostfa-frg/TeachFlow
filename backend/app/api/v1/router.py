@@ -645,6 +645,7 @@ def edit_roadmap(
                 sequence_index=item.sequence_index,
                 title=item.title,
                 description=item.description,
+                learning_objectives=(item.learning_objectives or next(t for t in proposal.topics if t.id == item.topic_id).learning_objectives),
                 duration_minutes=item.duration_minutes,
                 supporting_material_ids=item.supporting_material_ids,
             )
