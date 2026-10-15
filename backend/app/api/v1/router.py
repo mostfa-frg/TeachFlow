@@ -570,6 +570,7 @@ def generate_roadmap(
                 sequence_index=item.sequence_index,
                 title=item.title,
                 description=item.description,
+                learning_objectives=(item.learning_objectives or next(t for t in proposal.topics if t.id == item.topic_id).learning_objectives),
                 duration_minutes=item.duration_minutes,
                 supporting_material_ids=item.supporting_material_ids,
             )
@@ -711,6 +712,16 @@ def update_group_progress(
         raise HTTPException(404, "Group or session not found for this course.")
     if roadmap.state != "approved":
         raise HTTPException(409, "Progress can only be recorded for an approved roadmap.")
+    objectives = session.learning_objectives or session.topic.learning_objectives or []
+    indexes = request.completed_objective_indexes
+    if indexes is None and request.state is None:
+        raise HTTPException(422, "Provide a state or completed objective indexes.")
+    if indexes is not None:
+        if any(index >= len(objectives) for index in indexes):
+            raise HTTPException(422, "A completed objective index is outside this session's goals.")
+        state_value = "upcoming" if not indexes else ("completed" if len(indexes) == len(objectives) else "in_progress")
+    else:
+        state_value = request.state
     progress = db.scalar(
         select(GroupSessionProgress).where(
             GroupSessionProgress.group_id == group_id,
@@ -719,14 +730,17 @@ def update_group_progress(
     )
     if progress is None:
         progress = GroupSessionProgress(
-            group_id=group_id, session_id=session_id, state=request.state
+            group_id=group_id, session_id=session_id, state=state_value
         )
         db.add(progress)
-    else:
-        progress.state = request.state
-    progress.completed_at = (
-        datetime.now(timezone.utc) if request.state == "completed" else None
-    )
+    if indexes is not None:
+        progress.completed_objective_indexes = indexes
+    elif state_value == "completed":
+        progress.completed_objective_indexes = list(range(len(objectives)))
+    elif state_value == "upcoming":
+        progress.completed_objective_indexes = []
+    progress.state = state_value
+    progress.completed_at = datetime.now(timezone.utc) if state_value == "completed" else None
     db.commit()
     db.refresh(progress)
     return progress
