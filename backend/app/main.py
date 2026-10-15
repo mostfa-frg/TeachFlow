@@ -45,6 +45,11 @@ async def validation_error_handler(_request, exc: RequestValidationError) -> JSO
     )
 
 
+@app.get("/manus-routes.json", include_in_schema=False)
+async def route_manifest() -> JSONResponse:
+    return JSONResponse({"routes": [{"path": "/", "title": "Instructor dashboard"}, {"path": "/roadmap", "title": "Course roadmap"}]})
+
+
 @app.get("/", include_in_schema=False)
 async def prototype() -> FileResponse:
     return FileResponse(
