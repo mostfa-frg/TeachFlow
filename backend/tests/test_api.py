@@ -475,3 +475,36 @@ def test_group_session_progress_is_isolated(client, monkeypatch):
         f"/api/v1/groups/{groups[1]['id']}/sessions/{session_id}/progress",
         json={"state": "completed"},
     ).status_code == 200
+
+
+def test_session_goal_progress_derives_state_and_persists_indexes(client, monkeypatch):
+    course = create_course(client)
+    group = client.post(
+        f"/api/v1/courses/{course['id']}/groups", json={"name": "Saturday"}
+    ).json()
+    proposal_input = sample_proposal()
+    proposal_input["sessions"][0]["learning_objectives"] = [
+        "Explain the concept",
+        "Apply it in an example",
+    ]
+    use_generator(monkeypatch, StubGenerator(proposal_input))
+    proposal = client.post(f"/api/v1/courses/{course['id']}/roadmaps/generate").json()
+    assert client.post(f"/api/v1/roadmaps/{proposal['id']}/approve").status_code == 200
+    session = proposal["sessions"][0]
+    assert session["learning_objectives"] == [
+        "Explain the concept",
+        "Apply it in an example",
+    ]
+    url = f"/api/v1/groups/{group['id']}/sessions/{session['id']}/progress"
+    partial = client.put(url, json={"completed_objective_indexes": [0]})
+    assert partial.status_code == 200, partial.text
+    assert partial.json()["state"] == "in_progress"
+    assert partial.json()["completed_objective_indexes"] == [0]
+    saved = client.get(f"/api/v1/groups/{group['id']}/progress").json()[0]
+    assert saved["completed_objective_indexes"] == [0]
+    complete = client.put(url, json={"completed_objective_indexes": [0, 1]})
+    assert complete.status_code == 200, complete.text
+    assert complete.json()["state"] == "completed"
+    assert complete.json()["completed_objective_indexes"] == [0, 1]
+    invalid = client.put(url, json={"completed_objective_indexes": [2]})
+    assert invalid.status_code == 422
