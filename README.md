@@ -7,7 +7,7 @@ TeachFlow is an instructor-only course planning platform. The repository retains
 - The backend persists courses, instructor groups, materials, versioned roadmaps, topics, sessions, dependency edges, and group-specific progress with SQLAlchemy 2.x.
 - Alembic provides the initial database migration. SQLite is the local default; PostgreSQL is supported by setting `DATABASE_URL`.
 - TXT, Markdown, and text-based PDF uploads are size-limited, stored under generated filenames, and extracted before they can be used as generation context.
-- Roadmap generation uses a configurable OpenAI Responses or compatible Chat Completions endpoint. Without credentials, generation responds with a clear `503`; no example or simulated AI response is substituted.
+- Roadmap generation defaults to Groq's OpenAI-compatible Chat Completions endpoint and `openai/gpt-oss-20b`; the provider, model, and API style are configurable. Without credentials, generation responds with a clear `503`; no example or simulated AI response is substituted.
 - Proposed roadmaps are validated and saved as drafts. Editing a draft and explicit approval are separate API actions; approving a newer version supersedes the previous approved roadmap.
 - The browser prototype remains recognizable and is served from the API at `/`. Its local sample course is clearly labelled demonstration data.
 

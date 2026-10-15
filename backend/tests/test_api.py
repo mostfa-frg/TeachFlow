@@ -306,7 +306,15 @@ def test_generator_supports_openai_api_styles(monkeypatch, api_style, endpoint):
     result = asyncio.run(generator.generate({"course": {"name": "Example"}}))
 
     assert result.topics[0].id == "foundations"
-    assert captured["url"] == f"https://api.openai.com/v1{endpoint}"
+    assert captured["url"] == f"https://api.groq.com/openai/v1{endpoint}"
+    prompt = (
+        captured["payload"]["messages"][0]["content"]
+        if api_style == "chat_completions"
+        else captured["payload"]["input"][0]["content"]
+    )
+    assert "JSON Schema:" in prompt
+    assert '"learning_objectives"' in prompt
+    assert "without Markdown fences" in prompt
 
 
 def test_schema_and_dependency_cycles_are_rejected():
@@ -375,6 +383,37 @@ def test_generation_saves_versioned_draft_idempotently_and_approval(client, monk
     assert approved.status_code == 200
     assert approved.json()["state"] == "approved"
     assert client.put(f"/api/v1/roadmaps/{draft['id']}", json=sample_proposal()).status_code == 409
+
+
+def test_generation_retries_invalid_proposal_with_validation_feedback(client, monkeypatch):
+    course = create_course(client)
+    incomplete = sample_proposal()
+    incomplete["sessions"] = [
+        session
+        for session in incomplete["sessions"]
+        if session["topic_id"] == "foundations"
+    ]
+
+    class CorrectingGenerator:
+        def __init__(self):
+            self.contexts = []
+
+        async def generate(self, context):
+            self.contexts.append(context.copy())
+            proposal = incomplete if len(self.contexts) == 1 else sample_proposal()
+            return RoadmapProposal.model_validate(proposal)
+
+    generator = CorrectingGenerator()
+    use_generator(monkeypatch, generator)
+
+    response = client.post(f"/api/v1/courses/{course['id']}/roadmaps/generate")
+
+    assert response.status_code == 201, response.text
+    assert len(generator.contexts) == 2
+    assert "validation_feedback" not in generator.contexts[0]
+    assert generator.contexts[1]["validation_feedback"] == (
+        "Every topic must contain at least one session."
+    )
 
 
 def test_generation_context_includes_only_extracted_document_text(client, monkeypatch, tmp_path):
