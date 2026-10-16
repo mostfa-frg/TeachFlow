@@ -547,3 +547,32 @@ def test_session_goal_progress_derives_state_and_persists_indexes(client, monkey
     assert complete.json()["completed_objective_indexes"] == [0, 1]
     invalid = client.put(url, json={"completed_objective_indexes": [2]})
     assert invalid.status_code == 422
+
+
+def test_approved_roadmap_can_be_copied_to_an_editable_draft(client, monkeypatch):
+    course = create_course(client)
+    use_generator(monkeypatch, StubGenerator(sample_proposal()))
+    generated = client.post(
+        f"/api/v1/courses/{course['id']}/roadmaps/generate"
+    ).json()
+    assert client.post(f"/api/v1/roadmaps/{generated['id']}/approve").status_code == 200
+
+    response = client.post(
+        f"/api/v1/courses/{course['id']}/roadmaps/draft-from-approved"
+    )
+    assert response.status_code == 201, response.text
+    draft = response.json()
+    assert draft["state"] == "draft"
+    assert draft["version_number"] > generated["version_number"]
+    assert [topic["stable_id"] for topic in draft["topics"]] == [
+        topic["stable_id"] for topic in generated["topics"]
+    ]
+    assert [session["stable_id"] for session in draft["sessions"]] == [
+        session["stable_id"] for session in generated["sessions"]
+    ]
+    assert draft["dependencies"] == generated["dependencies"]
+
+    missing = client.post(
+        "/api/v1/courses/not-a-course/roadmaps/draft-from-approved"
+    )
+    assert missing.status_code == 404
