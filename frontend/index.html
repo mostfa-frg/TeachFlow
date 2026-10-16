@@ -181,7 +181,8 @@ async function hydrateApiCourse(raw){
     for(const row of rows){
       const session=sessionByApiId.get(row.session_id);
       if(!session)continue;
-      const indexes=[...(row.completed_objective_indexes||[])].sort((a,b)=>a-b);
+      const savedIndexes=[...(row.completed_objective_indexes||[])].sort((a,b)=>a-b);
+      const indexes=row.state==='completed'?sessionGoals(session).map((_,i)=>i):savedIndexes;
       goalProgress[groupId][session.id]=indexes;
       if(row.state==='completed'||(sessionGoals(session).length>0&&indexes.length>=sessionGoals(session).length))progress[groupId].push(session.id);
     }
