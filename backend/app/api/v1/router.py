@@ -612,6 +612,41 @@ def get_approved_course_roadmap(
     return _roadmap_response(_get_roadmap(db, roadmap.id))
 
 
+@router.post(
+    "/api/v1/courses/{course_id}/roadmaps/draft-from-approved",
+    response_model=RoadmapVersionOut,
+    status_code=201,
+    tags=["roadmaps"],
+)
+def create_draft_from_approved(course_id: str, db: Session = Depends(get_db)) -> RoadmapVersionOut:
+    """Create an editable draft copied from the current approved roadmap."""
+    if not db.get(Course, course_id):
+        raise HTTPException(404, "Course not found.")
+    source = db.scalar(
+        select(RoadmapVersion).where(RoadmapVersion.course_id == course_id, RoadmapVersion.state == "approved")
+        .order_by(RoadmapVersion.version_number.desc())
+        .options(selectinload(RoadmapVersion.topics), selectinload(RoadmapVersion.sessions), selectinload(RoadmapVersion.dependencies))
+    )
+    if not source:
+        raise HTTPException(404, "No approved roadmap exists for this course.")
+    latest = db.scalar(select(RoadmapVersion.version_number).where(RoadmapVersion.course_id == course_id).order_by(RoadmapVersion.version_number.desc()).limit(1)) or source.version_number
+    draft = RoadmapVersion(course_id=course_id, version_number=latest + 1, state="draft", warnings=list(source.warnings or []))
+    db.add(draft)
+    db.flush()
+    topic_map = {}
+    for old in source.topics:
+        new_topic = Topic(roadmap_version_id=draft.id, stable_id=old.stable_id, title=old.title, description=old.description, learning_objectives=list(old.learning_objectives or []), support_note=old.support_note)
+        db.add(new_topic)
+        topic_map[old.id] = new_topic
+    db.flush()
+    for old in source.sessions:
+        db.add(TeachingSession(roadmap_version_id=draft.id, topic_id=topic_map[old.topic_id].id, stable_id=old.stable_id, sequence_index=old.sequence_index, title=old.title, description=old.description, learning_objectives=list(old.learning_objectives or []), duration_minutes=old.duration_minutes, supporting_material_ids=list(old.supporting_material_ids or [])))
+    for edge in source.dependencies:
+        db.add(TopicDependency(roadmap_version_id=draft.id, prerequisite_topic_id=topic_map[edge.prerequisite_topic_id].id, dependent_topic_id=topic_map[edge.dependent_topic_id].id))
+    db.commit()
+    return _roadmap_response(_get_roadmap(db, draft.id))
+
+
 @router.get(
     "/api/v1/roadmaps/{roadmap_id}",
     response_model=RoadmapVersionOut,
