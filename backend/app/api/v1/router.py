@@ -589,6 +589,30 @@ def generate_roadmap(
 
 
 @router.get(
+    "/api/v1/courses/{course_id}/roadmaps/approved",
+    response_model=RoadmapVersionOut,
+    tags=["roadmaps"],
+)
+def get_approved_course_roadmap(
+    course_id: str, db: Session = Depends(get_db)
+) -> RoadmapVersionOut:
+    """Return the active approved roadmap for a course, if one exists."""
+    if not db.get(Course, course_id):
+        raise HTTPException(404, "Course not found.")
+    roadmap = db.scalar(
+        select(RoadmapVersion)
+        .where(
+            RoadmapVersion.course_id == course_id,
+            RoadmapVersion.state == "approved",
+        )
+        .order_by(RoadmapVersion.version_number.desc())
+    )
+    if not roadmap:
+        raise HTTPException(404, "No approved roadmap exists for this course.")
+    return _roadmap_response(_get_roadmap(db, roadmap.id))
+
+
+@router.get(
     "/api/v1/roadmaps/{roadmap_id}",
     response_model=RoadmapVersionOut,
     tags=["roadmaps"],
