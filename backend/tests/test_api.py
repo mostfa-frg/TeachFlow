@@ -385,6 +385,45 @@ def test_generation_saves_versioned_draft_idempotently_and_approval(client, monk
     assert client.put(f"/api/v1/roadmaps/{draft['id']}", json=sample_proposal()).status_code == 409
 
 
+def test_approved_roadmap_can_be_loaded_by_course_id(client, monkeypatch):
+    course = create_course(client)
+    group = client.post(
+        f"/api/v1/courses/{course['id']}/groups",
+        json={"name": "Saturday Group", "schedule_description": "Saturday"},
+    )
+    assert group.status_code == 201
+
+    use_generator(monkeypatch, StubGenerator(sample_proposal()))
+    generated = client.post(f"/api/v1/courses/{course['id']}/roadmaps/generate")
+    assert generated.status_code == 201, generated.text
+    roadmap_id = generated.json()["id"]
+    approved = client.post(f"/api/v1/roadmaps/{roadmap_id}/approve")
+    assert approved.status_code == 200, approved.text
+
+    response = client.get(f"/api/v1/courses/{course['id']}/roadmaps/approved")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["id"] == roadmap_id
+    assert data["course_id"] == course["id"]
+    assert data["state"] == "approved"
+    assert len(data["sessions"]) == 3
+    assert data["dependencies"] == [
+        {
+            "prerequisite_topic_id": data["topics"][0]["stable_id"],
+            "dependent_topic_id": data["topics"][1]["stable_id"],
+        }
+    ]
+
+    no_roadmap = create_course(client, name="Course without roadmap")
+    missing = client.get(f"/api/v1/courses/{no_roadmap['id']}/roadmaps/approved")
+    assert missing.status_code == 404
+    assert "No approved roadmap" in missing.json()["error"]["message"]
+
+    missing_course = client.get("/api/v1/courses/not-a-course/roadmaps/approved")
+    assert missing_course.status_code == 404
+    assert missing_course.json()["error"]["message"] == "Course not found."
+
+
 def test_generation_retries_invalid_proposal_with_validation_feedback(client, monkeypatch):
     course = create_course(client)
     incomplete = sample_proposal()
