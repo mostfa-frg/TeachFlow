@@ -409,8 +409,8 @@ def test_approved_roadmap_can_be_loaded_by_course_id(client, monkeypatch):
     assert len(data["sessions"]) == 3
     assert data["dependencies"] == [
         {
-            "prerequisite_topic_id": data["topics"][0]["stable_id"],
-            "dependent_topic_id": data["topics"][1]["stable_id"],
+            "prerequisite_topic_id": "foundations",
+            "dependent_topic_id": "practice",
         }
     ]
 
