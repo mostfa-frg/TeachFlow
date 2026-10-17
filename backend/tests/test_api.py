@@ -576,3 +576,62 @@ def test_approved_roadmap_can_be_copied_to_an_editable_draft(client, monkeypatch
         "/api/v1/courses/not-a-course/roadmaps/draft-from-approved"
     )
     assert missing.status_code == 404
+
+
+
+def test_duplicate_session_sequence_indexes_are_rejected():
+    proposal = sample_proposal()
+    proposal["sessions"][1]["sequence_index"] = 1
+    with pytest.raises(InvalidRoadmap, match="sequence indexes must be unique"):
+        validate_roadmap(RoadmapProposal.model_validate(proposal))
+
+
+def test_progress_is_preserved_only_for_unchanged_goals_after_roadmap_approval(client, monkeypatch):
+    course = create_course(client)
+    group = client.post(
+        f"/api/v1/courses/{course['id']}/groups", json={"name": "Saturday"}
+    ).json()
+    original_input = sample_proposal()
+    original_input["sessions"][0]["learning_objectives"] = ["Explain", "Apply"]
+    original_input["sessions"][1]["learning_objectives"] = ["Old goal"]
+    use_generator(monkeypatch, StubGenerator(original_input))
+    original = client.post(
+        f"/api/v1/courses/{course['id']}/roadmaps/generate"
+    ).json()
+    assert client.post(f"/api/v1/roadmaps/{original['id']}/approve").status_code == 200
+
+    unchanged = next(s for s in original["sessions"] if s["stable_id"] == "foundation-session")
+    changed = next(s for s in original["sessions"] if s["stable_id"] == "foundation-practice")
+    progress_url = f"/api/v1/groups/{group['id']}/sessions/{{}}/progress"
+    assert client.put(
+        progress_url.format(unchanged["id"]),
+        json={"completed_objective_indexes": [0]},
+    ).status_code == 200
+    assert client.put(
+        progress_url.format(changed["id"]),
+        json={"completed_objective_indexes": [0]},
+    ).status_code == 200
+
+    replacement_input = sample_proposal()
+    replacement_input["sessions"][0]["learning_objectives"] = ["Explain", "Apply"]
+    replacement_input["sessions"][1]["learning_objectives"] = ["New goal"]
+    use_generator(monkeypatch, StubGenerator(replacement_input))
+    replacement = client.post(
+        f"/api/v1/courses/{course['id']}/roadmaps/generate"
+    ).json()
+    assert client.post(f"/api/v1/roadmaps/{replacement['id']}/approve").status_code == 200
+
+    current_unchanged = next(
+        s for s in replacement["sessions"] if s["stable_id"] == "foundation-session"
+    )
+    current_changed = next(
+        s for s in replacement["sessions"] if s["stable_id"] == "foundation-practice"
+    )
+    progress = client.get(f"/api/v1/groups/{group['id']}/progress")
+    assert progress.status_code == 200
+    by_session = {row["session_id"]: row for row in progress.json()}
+    assert by_session[current_unchanged["id"]]["completed_objective_indexes"] == [0]
+    assert by_session[current_unchanged["id"]]["state"] == "in_progress"
+    assert by_session[current_changed["id"]]["completed_objective_indexes"] == []
+    assert by_session[current_changed["id"]]["state"] == "upcoming"
+    assert original["sessions"][0]["id"] not in by_session
