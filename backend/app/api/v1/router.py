@@ -718,7 +718,14 @@ def edit_roadmap(
             )
         )
     roadmap.warnings = proposal.warnings
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            422,
+            "The roadmap contains conflicting session sequence indexes or identifiers.",
+        ) from exc
     db.expire_all()
     return _roadmap_response(_get_roadmap(db, roadmap.id))
 
