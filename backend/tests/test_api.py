@@ -635,3 +635,33 @@ def test_progress_is_preserved_only_for_unchanged_goals_after_roadmap_approval(c
     assert by_session[current_changed["id"]]["completed_objective_indexes"] == []
     assert by_session[current_changed["id"]]["state"] == "upcoming"
     assert original["sessions"][0]["id"] not in by_session
+
+
+def test_course_and_group_can_be_deleted(client):
+    course = create_course(client)
+    group = client.post(
+        f"/api/v1/courses/{course['id']}/groups", json={"name": "Saturday"}
+    ).json()
+
+    deleted_group = client.delete(
+        f"/api/v1/courses/{course['id']}/groups/{group['id']}"
+    )
+    assert deleted_group.status_code == 204
+    assert client.get(f"/api/v1/courses/{course['id']}/groups").json() == []
+
+    deleted_course = client.delete(f"/api/v1/courses/{course['id']}")
+    assert deleted_course.status_code == 204
+    assert client.get(f"/api/v1/courses/{course['id']}").status_code == 404
+    assert client.delete(f"/api/v1/courses/{course['id']}").status_code == 404
+
+
+def test_group_cannot_be_deleted_from_another_course(client):
+    first = create_course(client, name="First")
+    second = create_course(client, name="Second")
+    group = client.post(
+        f"/api/v1/courses/{first['id']}/groups", json={"name": "Saturday"}
+    ).json()
+    response = client.delete(
+        f"/api/v1/courses/{second['id']}/groups/{group['id']}"
+    )
+    assert response.status_code == 404
