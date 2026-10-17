@@ -87,6 +87,28 @@ def create_course(request: CourseCreate, db: Session = Depends(get_db)) -> Cours
     return course
 
 
+@router.delete("/api/v1/courses/{course_id}", status_code=204, tags=["courses"])
+def delete_course(course_id: str, db: Session = Depends(get_db)) -> None:
+    course = db.scalar(
+        select(Course).where(Course.id == course_id).options(selectinload(Course.materials))
+    )
+    if not course:
+        raise HTTPException(404, "Course not found.")
+    material_names = [
+        name
+        for material in course.materials
+        for name in (material.storage_name, material.extracted_name)
+        if name and Path(name).name == name
+    ]
+    db.delete(course)
+    db.commit()
+    material_dir = settings.data_dir / "materials"
+    for name in material_names:
+        try:
+            (material_dir / name).unlink(missing_ok=True)
+        except OSError:
+            logger.exception("Course deleted but material file cleanup failed")
+
 @router.get("/api/v1/courses", response_model=list[CourseOut], tags=["courses"])
 def list_courses(db: Session = Depends(get_db)) -> list[Course]:
     return list(db.scalars(select(Course).options(selectinload(Course.groups))).all())
@@ -155,6 +177,20 @@ def list_groups(course_id: str, db: Session = Depends(get_db)) -> list[Instructo
         ).all()
     )
 
+
+@router.delete(
+    "/api/v1/courses/{course_id}/groups/{group_id}",
+    status_code=204,
+    tags=["groups"],
+)
+def delete_group(
+    course_id: str, group_id: str, db: Session = Depends(get_db)
+) -> None:
+    group = db.get(InstructorGroup, group_id)
+    if not group or group.course_id != course_id:
+        raise HTTPException(404, "Group not found for this course.")
+    db.delete(group)
+    db.commit()
 
 @router.put(
     "/api/v1/courses/{course_id}/groups/{group_id}",
