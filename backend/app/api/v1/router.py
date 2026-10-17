@@ -744,8 +744,35 @@ def approve_roadmap(roadmap_id: str, db: Session = Depends(get_db)) -> RoadmapVe
             RoadmapVersion.state == "approved",
         )
         .with_for_update()
+        .options(
+            selectinload(RoadmapVersion.sessions).selectinload(TeachingSession.topic),
+        )
     ).all()
+
+    # Keep group progress attached to unchanged sessions when a new roadmap
+    # version is approved. Stable IDs are the cross-version identity contract.
+    new_sessions = {session.stable_id: session for session in roadmap.sessions}
     for previous in approved:
+        for old_session in previous.sessions:
+            new_session = new_sessions.get(old_session.stable_id)
+            if new_session is None:
+                continue
+            rows = db.scalars(
+                select(GroupSessionProgress).where(
+                    GroupSessionProgress.session_id == old_session.id
+                )
+            ).all()
+            old_goals = old_session.learning_objectives or old_session.topic.learning_objectives or []
+            new_goals = new_session.learning_objectives or new_session.topic.learning_objectives or []
+            for progress in rows:
+                # Preserve objective indexes only when the goal list is exactly
+                # unchanged. If goals changed, keep the session identity but
+                # require the instructor to review progress for the new goals.
+                if old_goals != new_goals:
+                    progress.completed_objective_indexes = []
+                    progress.state = "upcoming"
+                    progress.completed_at = None
+                progress.session_id = new_session.id
         previous.state = "superseded"
     db.flush()
     roadmap.state = "approved"
@@ -816,10 +843,16 @@ def list_group_progress(
 ) -> list[GroupSessionProgress]:
     if not db.get(InstructorGroup, group_id):
         raise HTTPException(404, "Group not found.")
+    active_session_ids = select(TeachingSession.id).join(
+        RoadmapVersion, TeachingSession.roadmap_version_id == RoadmapVersion.id
+    ).where(RoadmapVersion.state == "approved")
     return list(
         db.scalars(
             select(GroupSessionProgress)
-            .where(GroupSessionProgress.group_id == group_id)
+            .where(
+                GroupSessionProgress.group_id == group_id,
+                GroupSessionProgress.session_id.in_(active_session_ids),
+            )
             .order_by(GroupSessionProgress.created_at)
         ).all()
     )
