@@ -128,6 +128,12 @@ def validate_roadmap(
     session_topic_ids = [session.topic_id for session in proposal.sessions]
     if any(topic_id not in topic_ids for topic_id in session_topic_ids):
         raise InvalidRoadmap("Every session must reference an existing topic.")
+    sequence_keys = [(session.topic_id, session.sequence_index) for session in proposal.sessions]
+    if len(sequence_keys) != len(set(sequence_keys)):
+        raise InvalidRoadmap("Session sequence indexes must be unique within each topic.")
+    for session in proposal.sessions:
+        if any(not objective.strip() for objective in session.learning_objectives):
+            raise InvalidRoadmap("Session goals must not be blank.")
     if not referenced_material_ids <= (known_material_ids or set()):
         raise InvalidRoadmap("A session references a material outside this course.")
     if {session.topic_id for session in proposal.sessions} != topic_ids:
