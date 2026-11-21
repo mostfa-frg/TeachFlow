@@ -1,8 +1,8 @@
 # Decision register
 
-**21 November 2026 · No A1 approval recorded.** The owner authorized Phase 00, a milestone branch, a push and a PR to main. The supplied rules and brief establish instructor-only use, a session graph, shared plans with group-specific evidence, one agent and human approval of generated changes. The baseline's technology selections describe current code. They do not authorize new providers, spending, data transfers or migration.
+**22 November 2026 · Owner approved A1 option A.** The owner authorized Phase 00, a milestone branch, a push and a PR to main. The supplied rules and brief establish instructor-only use, a session graph, shared plans with group-specific evidence, one agent and human approval of generated changes. The baseline's technology selections describe current code. They do not authorize new providers, spending, data transfers or migration.
 
-## DECISION REQUIRED — A1: UI base
+## A1 · Approved UI base
 
 **Question.** Which frontend should later milestones use?
 
@@ -14,7 +14,18 @@
 
 **Recommendation.** A. The existing shell is already instructor-oriented and exercises real endpoints. The [spike](architecture/UI_BASE_SPIKE.md) identifies a backend graph mismatch shared by all three choices.
 
-**Work possible while pending.** Review this audit and PR. Implementation and Phase 01 await owner direction. Reply with `APPROVE A1: A`, `APPROVE A1: B`, `APPROVE A1: C`, or a specified alternative. Merge and next-phase authorization are separate.
+**Owner decision, 22 November 2026.** `APPROVE A1: A`. Extend the existing instructor UI and FastAPI backend under these requirements.
+
+1. Preserve working functionality and existing APIs.
+2. Keep the current frontend. A full rewrite and migration to Frappe Learning are outside this approval.
+3. Extract focused frontend modules during relevant milestones and keep additional complexity out of the monolithic HTML file.
+4. Keep the API and rendering layers separate so React/TypeScript remains an option if maintainability and complexity justify it.
+5. Prioritize the session-edge persistence defect. Preserve both endpoints, direction and relationship type through saving, loading, editing and approval.
+6. Support session-to-session relationships, many-to-many session/topic membership and group-specific progress on shared plans.
+7. Maintain accessibility, responsive behavior and comprehensive loading and error states.
+8. Preserve all existing tests and add regression coverage for identified defects, including the complete session-edge round trip.
+
+**Milestone gate.** Begin Phase 01 only after the owner merges PR #5 into main. Use a fresh milestone branch from merged main, open a separate PR and follow the remaining approval gates.
 
 ## Later decisions
 
