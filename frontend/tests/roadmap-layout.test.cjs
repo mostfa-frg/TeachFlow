@@ -47,14 +47,52 @@ test('zoom scales the dynamic roadmap canvas rather than a fixed 660x460 view', 
   assert.doesNotMatch(source, /660\*next/);
 });
 
-test('roadmap selection never forces a closed detail panel open', () => {
+test('session click opens closed panel, then changes detail in place without full rerenders', () => {
   const source = script.split('\n').find(line => line.startsWith('function selectRoadmapNode('));
   assert.ok(source);
-  assert.match(source, /state\.selectedNode=nextId/);
-  assert.match(source, /state\.showDetail&&panel/);
-  assert.doesNotMatch(source, /state\.showDetail=true|render\(\)/);
+  const sessionA = {id: 's1', title: 'Intro'};
+  const sessionB = {id: 's2', title: 'Next'};
+  const state = {screen: 'roadmap', draft: null, selectedNode: 's1', selectedNodeManually: true, showDetail: false};
+  let renders = 0, persists = 0, updates = 0;
+  const panel = {outerHTML: ''};
+  const buttons = [sessionA, sessionB].map(s => ({dataset: {id: s.id}, classList: {toggle(){}}, setAttribute(){}}));
+  const select = vm.runInNewContext('(' + source + ')', {
+    state, selectedCourse: () => ({topics: [sessionA, sessionB], edges: []}),
+    persist: () => persists++, render: () => renders++, reviewEdit: () => {},
+    document: {querySelectorAll: () => buttons, getElementById: () => panel},
+    closeStyledSelect: () => {}, enhanceSelects: () => {},
+    detailPanel: t => {updates++; return '<aside>' + t.title + '</aside>';}
+  });
+  select('s1'); // clicking current session still opens it when closed
+  assert.equal(state.showDetail, true);
+  assert.equal(renders, 1);
+  select('s2');
+  assert.equal(state.selectedNode, 's2');
+  assert.equal(renders, 1, 'switching an open panel must not rerender the page');
+  assert.equal(updates, 1);
+  assert.match(panel.outerHTML, /Next/);
+  assert.equal(persists, 2);
+  select('s2');
+  assert.equal(renders, 1);
+  assert.equal(updates, 1, 'clicking an already active session does not recreate the sidebar');
   assert.match(script, /case'select-node':selectRoadmapNode\(b\.dataset\.id\);break/);
   assert.match(html, /\.reference-detail\{animation:none\}/);
+});
+test('roadmap header groups semantic action buttons with a larger toggle directly below', () => {
+  const source = script.split('\n').find(line => line.startsWith('function roadmapPage('));
+  assert.ok(source);
+  const row = source.indexOf('class="roadmap-action-row"');
+  const endRow = source.indexOf('</div><button class="btn roadmap-detail-toggle"', row);
+  assert.ok(row > 0 && endRow > row, 'details toggle follows the action row');
+  assert.match(source, /class="btn roadmap-edit-action"/);
+  assert.match(source, /class="btn roadmap-delete-action"/);
+  assert.match(source, /class="btn roadmap-new-action"/);
+  assert.match(source, /aria-expanded="\$\{state\.showDetail\}"/);
+  assert.match(html, /\.roadmap-header-actions \.roadmap-detail-toggle\{position:static/);
+  assert.match(html, /width:48px;height:46px/);
+  assert.match(html, /\.roadmap-edit-action\{background:var\(--blue-soft\)/);
+  assert.match(html, /\.roadmap-delete-action\{background:var\(--terra-soft\)/);
+  assert.match(html, /\.roadmap-new-action\{background:var\(--sage\)/);
 });
 test('custom dropdowns preserve native form values and support keyboard interaction', () => {
   assert.match(html, /\.tf-select-menu\{position:fixed/);
