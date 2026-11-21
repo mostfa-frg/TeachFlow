@@ -1,19 +1,19 @@
 # Phase 00 · Repository audit
 
-**Baseline, 21 November 2026.** The source is [mostfa-frg/TeachFlow at 5a9658c](https://github.com/mostfa-frg/TeachFlow/tree/5a9658c7bd053e0952e32b8317dc5ee5aa971d97). A fresh checkout reported `## main...origin/main` with no edits before branching. The audit branch is `codex/phase-00-repository-audit`. An instructor can already save a course, approve a draft plan and record different progress for two groups. The largest release risks are lack of instructor identity, loss of session-edge semantics on save, and lack of an attributable approval history.
+**Baseline, 21 November 2026.** The source is [mostfa-frg/TeachFlow at 6e3c7fa](https://github.com/mostfa-frg/TeachFlow/tree/6e3c7fa0a7f23211dd583abda62860907238ac2e). The initial checkout at 5a9658c reported `## main...origin/main` with no edits before branching. The audit branch is `codex/phase-00-repository-audit`. An instructor can already save a course, approve a draft plan and record different progress for two groups. The largest release risks are lack of instructor identity, loss of session-edge semantics on save, and lack of an attributable approval history.
 
 ## Inventory at the baseline
 
 | Location | What was present |
 | --- | --- |
-| Root | 30 tracked files across the tree. README, .gitignore, requirements.txt and pytest.ini at root. No tracked AGENTS.md at any level, CODEX_RULES.md, canonical brief, prompt pack, decision register, project license, dependency lock, CI workflow, deployment manifest or .env.example. The README's copy-template step therefore fails in a fresh checkout. No secret was needed for the offline audit. |
-| frontend/index.html | HTML, CSS, state, SVG graph layout, DOM handlers, API client, sample data and draft recovery in one file. FastAPI serves it at the root. No JS package manifest or browser test harness. |
+| Root | 47 tracked files across the tree at 6e3c7fa. Root contains README, .gitignore, requirements.txt, pytest.ini, CODEX_RULES.md and an empty AGENTS.md. The canonical brief and prompt pack are tracked. No prior decision register, project license, dependency lock, CI workflow, deployment manifest or .env.example. The README's copy-template step therefore fails in a fresh checkout. No secret was needed for the offline audit. |
+| frontend/index.html | HTML, CSS, state, SVG graph layout, DOM handlers, API client, sample data and draft recovery in one file. FastAPI serves it at the root and serves frontend/assets/teachflow-logo.svg on a dedicated asset route. No JS package manifest or browser test harness. |
 | backend/app | FastAPI router, Pydantic contracts, SQLAlchemy tables/sessions, environment settings, logging, document extraction and a configurable generation adapter. Route handlers also coordinate storage, SQL, provider calls and approval transactions. |
 | backend/migrations | Alembic config and three ordered revisions for the foundation, legacy session ordering and per-group goal completion. SQLite local default. PostgreSQL driver declared, production behavior unverified. |
 | backend/tests | Isolated SQLite API tests, mocked model responses and a legacy migration test. No browser or tenant boundary suite. |
 | docs | architecture.md, data-model.md, development.md and implementation-status.md. The earlier status note lists progress controls as future work. The current shell and API already save goal indexes. |
 
-The owner supplied the operating contract, canonical brief and twelve milestone prompts outside the baseline. This branch imports those inputs. The inherited custom shell and Groq defaults are implementation evidence. No prior product sign-off record was found in the tracked tree. Dependency ranges and the actual test environment are recorded in [the test report](TEST_REPORT.md).
+While the audit ran, main advanced from 5a9658c to 6e3c7fa. The new main includes the same operating contract, canonical brief and twelve prompts, an empty AGENTS.md, a prompt index, and logo changes. This branch incorporates that revision, fills the empty instructions file and adds the audit records. The rules, brief and prompts match the supplied originals. The inherited custom shell and Groq defaults are implementation evidence. No prior product sign-off record was found in the tracked tree. Dependency ranges and the actual test environment are recorded in [the test report](TEST_REPORT.md).
 
 ## Gap matrix
 

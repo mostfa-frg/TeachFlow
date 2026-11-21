@@ -2,7 +2,7 @@
 
 These IDs index the supplied brief and operating contract for the audit. They do not change priority or approve implementation. Existing pytest names below refer to [test_api.py](../backend/tests/test_api.py) unless otherwise noted. Status describes the full requirement, even when a narrower test passes.
 
-| ID / source | Instructor outcome | Implementation evidence at 5a9658c | Existing verification → missing acceptance evidence | Status |
+| ID / source | Instructor outcome | Implementation evidence at 6e3c7fa | Existing verification → missing acceptance evidence | Status |
 | --- | --- | --- | --- | --- |
 | TF-01 · rules, brief §3 | Access only owned courses, groups, files and proposals | Course lacks owner in models.py. Handlers use resource IDs and course/group checks. | test_group_cannot_be_deleted_from_another_course covers containment. Need anonymous, second-owner and admin access tests. | MISSING |
 | TF-02 · §5.1 | Bring in calendar events and infer group schedules, with one-line fallback | frontend/index.html extractSchedule previews days/counts. InstructorGroup stores free text and duration. | test_course_and_group_persistence covers records. Need ICS/time zones, recurrence, CSV, preview correction and repeat import tests. | PARTIAL |

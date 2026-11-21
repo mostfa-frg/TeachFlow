@@ -57,4 +57,12 @@ async def prototype() -> FileResponse:
     )
 
 
+@app.get("/assets/teachflow-logo.svg", include_in_schema=False)
+async def teachflow_logo() -> FileResponse:
+    return FileResponse(
+        Path(__file__).resolve().parents[2] / "frontend" / "assets" / "teachflow-logo.svg",
+        media_type="image/svg+xml",
+    )
+
+
 app.include_router(router)
