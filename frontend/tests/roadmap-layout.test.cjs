@@ -150,3 +150,16 @@ test('small screens keep labels readable through minimum zoom and panning', () =
   assert.match(source,/minimumReadableZoom=wrap\.clientWidth<650\?\.78:\.72/);
   assert.match(html,/\.roadmap-scroll\{overscroll-behavior:contain/);
 });
+
+test('selecting a session updates related dependency paths without rerendering the graph', () => {
+  const svg = renderPaths(
+    [{id:'intro'}, {id:'practice'}, {id:'quiz'}],
+    [['intro','quiz']],
+    {intro:{x:255,y:118},practice:{x:467,y:118},quiz:{x:679,y:118}},1191,460,{},'practice'
+  );
+  assert.match(svg,/data-from="intro" data-to="quiz"/);
+  const handler = script.split('\n').find(line => line.startsWith('function selectRoadmapNode('));
+  assert.match(handler, /document\.querySelectorAll\('\.roadmap-card \.dependency-edge'\)/);
+  assert.match(handler, /path\.setAttribute\('data-related'/);
+  assert.doesNotMatch(handler, /location\.reload\(\)/);
+});
