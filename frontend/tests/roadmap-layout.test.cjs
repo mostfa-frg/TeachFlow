@@ -76,7 +76,7 @@ test('session click opens closed panel, then changes detail in place without ful
   assert.equal(renders, 1);
   assert.equal(updates, 1, 'clicking an already active session does not recreate the sidebar');
   assert.match(script, /case'select-node':selectRoadmapNode\(b\.dataset\.id\);break/);
-  assert.match(html, /\.reference-detail\{animation:none\}/);
+  assert.match(html, /\.reference-detail\.is-entering:not\(\.is-closed\)\{animation:detail-slide-in/);
 });
 test('roadmap header groups semantic action buttons with a larger toggle directly below', () => {
   const source = script.split('\n').find(line => line.startsWith('function roadmapPage('));
@@ -102,4 +102,16 @@ test('custom dropdowns preserve native form values and support keyboard interact
   assert.match(script, /select\.dispatchEvent\(new Event\('change',\{bubbles:true\}\)\)/);
   assert.match(script, /event\.key==='Escape'/);
   assert.match(script, /enhanceSelects\(app\)/);
+});
+
+test('detail sidebar slides in only when becoming visible, not when switching sessions or rerendering', () => {
+  assert.match(html, /@keyframes detail-slide-in/);
+  assert.match(html, /\.reference-detail\{animation:none\}/);
+  assert.match(html, /\.reference-detail\.is-entering:not\(\.is-closed\)\{animation:detail-slide-in/);
+  assert.match(script, /let lastRenderedDetailVisible=false/);
+  assert.match(script, /const entering=detailVisible&&!lastRenderedDetailVisible;lastRenderedDetailVisible=detailVisible/);
+  assert.match(script, /if\(entering\)document\.getElementById\('session-detail-panel'\)\?\.classList\.add\('is-entering'\)/);
+  const select = script.split('\n').find(line => line.startsWith('function selectRoadmapNode('));
+  assert.doesNotMatch(select, /is-entering/);
+  assert.match(html, /@media\(prefers-reduced-motion:reduce\)/);
 });
