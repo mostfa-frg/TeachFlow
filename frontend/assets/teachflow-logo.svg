@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="188 78 512 727" role="img" aria-label="TeachFlow logo"><path fill="#252B2A" fill-rule="evenodd" d="M616 397 L495 415 L376 439 L355 447 L340 460 L331 475 L326 494 L326 736 L335 757 L345 761 L356 759 L425 721 L433 713 L439 699 L441 610 L580 568 L584 560 L585 509 L443 549 L439 548 L440 510 L444 500 L455 490 L617 448 L621 442 L621 403 Z"/><path fill="#708A7B" fill-rule="evenodd" d="M230 375 L236 401 L251 419 L265 426 L288 429 L464 396 L575 382 L644 377 L656 355 L561 359 L462 369 L368 384 L280 403 L265 397 L253 378 L253 365 L257 355 L270 345 L499 349 L253 311 L236 341 Z M274 277 L510 337 L294 253 Z M321 224 L519 328 L345 205 Z M376 181 L529 321 L400 167 Z M436 149 L436 155 L541 317 L460 140 Z M496 126 L495 131 L556 320 L520 120 Z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="190 135 490 605" role="img" aria-labelledby="title">
+<title id="title">TeachFlow — flowing pages monogram</title>
+<defs>
+<linearGradient id="flow" x1="0" y1="0" x2="0.24" y2="1" gradientUnits="objectBoundingBox">
+<stop offset="0" stop-color="#738E7C"/><stop offset=".40" stop-color="#698774"/><stop offset=".58" stop-color="#455F51"/><stop offset=".76" stop-color="#252F2C"/><stop offset="1" stop-color="#252B2A"/>
+</linearGradient>
+<linearGradient id="pages" x1="0" y1="0" x2="1" y2=".55"><stop stop-color="#829B88"/><stop offset="1" stop-color="#4E6D59"/></linearGradient>
+</defs>
+<!-- The page fan flows into the left stem of the monogram as one uninterrupted shape. -->
+<path fill="url(#flow)" d="M270 331 C231 349 210 369 217 402 C223 431 246 451 278 454 L291 454 C317 454 328 467 328 492 L328 642 C328 686 349 709 397 715 L397 485 C397 449 409 417 455 400 L297 400 C274 400 260 386 260 371 C260 352 277 344 296 334 Z"/>
+<!-- Radiating book pages: restrained sage, with organic rounded page tips. -->
+<path fill="url(#pages)" d="M265 346 C290 323 352 284 587 158 Q585 180 575 201 L279 344 Z"/>
+<path fill="url(#pages)" d="M270 350 L628 210 Q626 230 614 252 L281 348 Z"/>
+<path fill="url(#pages)" d="M271 356 L647 278 Q642 298 627 319 L277 359 Z"/>
+<path fill="url(#pages)" d="M270 373 L647 347 L633 379 L294 379 C283 379 275 377 270 373 Z"/>
+<!-- Charcoal F is separated by a narrow ivory channel like the original mark. -->
+<path fill="#252B2A" d="M419 715 L419 482 C419 435 451 401 504 401 L626 401 L598 468 L518 468 Q488 468 487 500 L585 500 L558 564 L487 564 L487 643 Q487 692 444 709 Z"/>
+</svg>
