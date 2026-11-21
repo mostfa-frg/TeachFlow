@@ -115,3 +115,38 @@ test('detail sidebar slides in only when becoming visible, not when switching se
   assert.doesNotMatch(select, /is-entering/);
   assert.match(html, /@media\(prefers-reduced-motion:reduce\)/);
 });
+
+test('labels are below the connector and long titles are clamped', () => {
+  assert.match(html, /\.roadmap-card \.node strong\{/);
+  assert.match(html, /-webkit-line-clamp:2/);
+  assert.match(html, /translate\(-17px,-17px\)/);
+  assert.match(html, /\.roadmap-card \.node \.nmeta>span:last-child\{/);
+  assert.match(script, /title="\$\{escape\(t\.title\)\}"/);
+});
+test('route U-turns use separate outside gutters while keeping four nodes per row', () => {
+  const sessions = Array.from({length: 28}, (_, i) => ({id:'s'+(i+1)}));
+  const {positions,width,height} = layout(sessions);
+  const svg = renderPaths(sessions,[],positions,width,height);
+  assert.equal((svg.match(/class="edge roadmap-route"/g)||[]).length,27);
+  assert.equal((svg.match(/ C /g)||[]).length,6);
+  assert.match(svg, / H /);
+  assert.ok(positions.s4.x + 160 < width);
+  assert.ok(positions.s5.x === positions.s4.x);
+  assert.ok(positions.s9.x === positions.s8.x);
+  assert.ok(height > positions.s28.y + 100);
+});
+test('status-driven route highlighting is visual only and respects session order', () => {
+  const sessions = Array.from({length: 4},(_,i)=>({id:'s'+(i+1)}));
+  const {positions,width,height} = layout(sessions);
+  const svg = renderPaths(sessions, [],positions,width,height,{s1:'done',s2:'done',s3:'active',s4:'upcoming'},'s3');
+  assert.equal((svg.match(/data-state="completed"/g)||[]).length,1);
+  assert.equal((svg.match(/data-state="active"/g)||[]).length,1);
+  assert.equal((svg.match(/data-state="upcoming"/g)||[]).length,1);
+  assert.match(html, /\.roadmap-card \.edge\.roadmap-route\[data-state="active"\]/);
+  assert.match(script, /roadmapSvg\(topics,edges,positions,width,height,statuses,state\.selectedNode\)/);
+});
+test('small screens keep labels readable through minimum zoom and panning', () => {
+  const source = script.split('\n').find(line => line.startsWith('function zoom('));
+  assert.match(source,/minimumReadableZoom=wrap\.clientWidth<650\?\.78:\.72/);
+  assert.match(html,/\.roadmap-scroll\{overscroll-behavior:contain/);
+});

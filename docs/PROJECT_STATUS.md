@@ -17,3 +17,7 @@ Product definition, pilot metrics, scope and acceptance catalogue are on main fo
 | Deployment | PARTIAL | Local FastAPI/SQLite and Alembic path exists. PostgreSQL operations, production isolation, release pipeline and restore drill remain unverified. |
 
 [Tests and limits](TEST_REPORT.md) · [Requirement-by-requirement status](REQUIREMENTS_TRACEABILITY.md) · [Gate A1](DECISIONS.md)
+
+## Focused roadmap UI follow-up · 22 November 2026
+
+The existing instructor shell has been retained. The serpentine roadmap now places session status, title and duration below the path line, reserves outside lanes for curved row transitions, highlights progress-aware sequential segments, and uses a legible zoom floor with horizontal scrolling on narrow viewports. The existing click-to-open session detail panel, accessible dropdowns and approval/progress APIs remain unchanged. This is a presentation update, not a fix for typed session-edge persistence or unfinished MVP features. Visual browser acceptance and the full backend suite are still required.
