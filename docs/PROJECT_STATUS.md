@@ -1,6 +1,10 @@
-# Project status · Phase 00
+# Current milestone · Phase 01
 
-**Phase 00 discovery delivered for review. MVP incomplete.** The baseline, branch and inventory appear in the [audit](00_AUDIT.md). The branch fills the root instructions file and adds the audit, feasibility experiment, decision and verification records. The reconciled base already contains the canonical brief, project rules and all twelve prompts. The owner approved A1 option A on 22 November 2026. Phase 01 awaits the manual merge of PR #5.
+Product definition, pilot metrics, scope and acceptance catalogue are on main for B1 review. Product approval is pending. The implementation gaps below remain open.
+
+## Phase 00 baseline
+
+**Phase 00 discovery delivered for review. MVP incomplete.** The baseline, branch and inventory appear in the [audit](00_AUDIT.md). The branch fills the root instructions file and adds the audit, feasibility experiment, decision and verification records. The reconciled base already contains the canonical brief, project rules and all twelve prompts. The owner approved A1 option A on 22 November 2026. PR #5 merged at 58927ec.
 
 | Workflow at the audited revision | Status | What an instructor can rely on |
 | --- | --- | --- |

@@ -11,3 +11,7 @@ Start with the [Phase 00 repository audit](00_AUDIT.md) for the baseline, 12-are
 | [Canonical brief](../reference/TeachFlow_Project_Brief.md) and [operating rules](../CODEX_RULES.md) | Product requirements and approval gates |
 | [Phase 00 prompt](../prompts/00-repo-audit-and-ui-spike.md) | Milestone acceptance criteria |
 | [Original architecture](architecture.md), [data model](data-model.md), [development](development.md), [implementation notes](implementation-status.md) | Earlier implementation context. Check dated audit findings for differences. |
+
+## Phase 01 product baseline
+
+[Product definition](product/PRD.md) · [Scope and acceptance demo](product/MVP_SCOPE.md) · [Pilot metrics](product/SUCCESS_METRICS.md) · [Functional and nonfunctional requirements, stories, acceptance criteria, business rules and glossary](requirements/TRACEABILITY.md)

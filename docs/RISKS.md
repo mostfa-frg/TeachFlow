@@ -13,3 +13,7 @@
 | R9 · Medium | Calendar access, team capacity, target budget and Frappe operating experience are unknown. | Set time/spend limits at the next gates. Use manual imports and explicit refresh at week 2. Cut P1 first. |
 
 Risk retirement requires the evidence in the final column. Phase 00 records these risks for planning.
+
+## Phase 01 assumptions
+
+The [product register](product/PRD.md) assigns validation steps to the reuse, input availability, review effort and team-capacity assumptions. B1 covers the private local pilot and legacy-file fallback. Track actual pilot measurements before committing to targets.

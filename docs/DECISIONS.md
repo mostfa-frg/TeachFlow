@@ -39,3 +39,7 @@
 | Before external AI calls or sensitive uploads | Choose provider, eligible content, residency, model, per-run/monthly budget, logging and fallback. Existing Groq configuration is historical. No paid selection or live calls in Phase 00. |
 | Before audio intake/transcription | Approve consent, retention, deletion, access and any third-party processor. Use synthetic uploaded transcript text for the first evaluation. |
 | Before migration/release | Approve destructive changes separately, if any. Confirm license/distribution intent, deployment target, release criteria and rollback/restore owner. |
+
+## B1 · Product baseline proposed for approval
+
+Approve an instructor teaching multiple groups as the pilot user, the [P0 boundary and fallback modes](product/MVP_SCOPE.md), and a private local pilot using synthetic inputs? Option A adopts this baseline and validates the proposed metrics during the pilot. Option B requests specific revisions. Secure deployment remains a release criterion. Provider selection, hosting, consent and spending stay at their later gates. Phase 02 awaits the owner's decision.

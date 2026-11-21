@@ -14,3 +14,7 @@ Baseline `6e3c7fa0a7f23211dd583abda62860907238ac2e`. Windows, CPython 3.14.0, No
 | Audit deliverables | SHA-256 comparison with the supplied files, relative link resolution and matrix row count | All 14 rules/brief/prompt files matched byte for byte in the working tree. All 33 local links across the nine new instruction/audit records resolved, and the matrix contains 12 areas. |
 
 The suite uses SQLite and synthetic/mock AI results. It covers persistence, uploads and error handling, proposal validation, retry, edit/approval, version transitions, group isolation and legacy sequence ordering. It does not establish live model quality, instructor isolation, accessibility, browser end-to-end behavior, PostgreSQL operation or deployment readiness. No project lint, format, type-check, accessibility or security runner was configured. No provider keys, paid calls or external document uploads were needed.
+
+## Phase 01 · 22 November 2026
+
+On the merged baseline with the Git workflow amendment, the existing offline suite passed: python -m pytest -q produced 29 passed and one upstream Starlette TestClient deprecation warning in 3.22 s. Phase 01 changes are documentation only. Catalogue validation checked 13 requirement/story/acceptance mappings, case anchors, six nonfunctional requirements, six business rules and local document links. Git diff whitespace validation passed. No configured project lint runner. Product acceptance cases and pilot targets await implementation and evaluation.

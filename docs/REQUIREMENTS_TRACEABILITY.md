@@ -19,3 +19,7 @@ These IDs index the supplied brief and operating contract for the audit. They do
 | TF-13 · §§11–12, rules | Deploy securely and reproduce a full instructor demo | FastAPI health/readiness, Alembic and isolated pytest fixture. Local demonstration is labeled. | Health checks, SQLite migration chain and legacy sequence test. Need CI, PostgreSQL, deployment/restore, browser journey, accessibility, consent, security and AI quality evidence. | PARTIAL |
 
 P1 assessment drafts, read-only version browsing, GitHub links and FAQs are deferred until P0 passes and the owner approves scope. P2 student accounts, live meeting bots, autonomous grading, external auto-send, automatic rescheduling and a composite health score remain outside the MVP.
+
+## Phase 01 expansion
+
+The [P0 verification catalogue](requirements/TRACEABILITY.md) maps TF-01 through TF-13 to stable functional requirements, stories, acceptance cases, planned phases and test types. B1 approval is pending. Baseline implementation statuses above still apply.
