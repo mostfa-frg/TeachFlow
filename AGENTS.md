@@ -2,6 +2,6 @@
 
 Before each milestone, read [the operating contract](CODEX_RULES.md), [the canonical project brief](reference/TeachFlow_Project_Brief.md), [the decision record](docs/DECISIONS.md), and the requested file in [the milestone prompt pack](prompts/). Apply approved decisions first. Distinguish inherited code and proposals from decisions the owner has approved.
 
-Use the GitHub repository as the development baseline. Start each authorized milestone on its own branch from the agreed base. Preserve user changes, test the actual behavior, update the [project records](docs/README.md), commit and push the milestone branch, and open a pull request against `main`. Keep changes on milestone branches and obtain explicit owner approval before merging. Stop at the prompt's decision gate and wait for explicit authorization before beginning another phase.
+Work directly on main for authorized milestones. Fetch origin/main before starting and before pushing. Preserve local and remote changes. Fast-forward when possible. If histories diverge, merge remote changes, inspect the result, and repeat relevant validation before a normal push. Never force push, rewrite history or discard work. Use feature branches or pull requests only at the owner's explicit request. Make small reversible commits, run applicable checks, maintain the project records and stop at mandatory approval gates.
 
 Keep TeachFlow instructor-only. Preserve human review for generated changes. Record the outcome, checks and limitations at every handoff.

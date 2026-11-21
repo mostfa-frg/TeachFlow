@@ -25,7 +25,7 @@
 7. Maintain accessibility, responsive behavior and comprehensive loading and error states.
 8. Preserve all existing tests and add regression coverage for identified defects, including the complete session-edge round trip.
 
-**Milestone gate.** Begin Phase 01 only after the owner merges PR #5 into main. Use a fresh milestone branch from merged main, open a separate PR and follow the remaining approval gates.
+**Workflow amendment, 22 November 2026.** PR #5 merged at 58927ec. The owner superseded milestone branches and PRs with small verified commits pushed directly to main under AGENTS.md. Phase 01 is authorized. Phase 02 requires B1 approval. All A1 engineering requirements remain in effect.
 
 ## Later decisions
 

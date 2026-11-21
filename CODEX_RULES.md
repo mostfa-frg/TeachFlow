@@ -12,6 +12,8 @@ Build a **working six-week MVP** of TeachFlow, an AI-powered **instructor-only**
 - Six-week delivery is a *scope constraint*, not a promise of labor/time estimates. Reduce P1 and nonessential automation first. Do not disguise missing P0 as complete.
 
 ## How to work in the repository
+Follow the direct-to-main Git workflow in AGENTS.md for each authorized milestone. Git authorization does not change product, security, privacy, architecture, cost or migration gates.
+
 1. Inspect `git status`, all `AGENTS.md` instructions, directory tree, manifests, README, env examples, schemas/migrations, tests, CI, existing components, and current working features. Avoid conflicting with unstaged user changes; do not delete/overwrite work without approval. Never rewrite the repository merely for stylistic preference.
 2. Compare implemented behavior to canonical brief. Mark facts **EXISTING / PARTIAL / MISSING / UNKNOWN** with file paths and reproducible evidence.
 3. Work on the current approved milestone **only**. Finish that milestone's code, docs, tests, and verification; stop at its gate and ask for the next prompt. No fake implementations, fictitious API calls, misleading UI success messages, or mock data presented as live. Demo/test fixtures must be labeled.
