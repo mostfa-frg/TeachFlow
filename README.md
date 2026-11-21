@@ -1,6 +1,6 @@
 # TeachFlow
 
-TeachFlow is an instructor-only course planning platform. The repository retains its standalone HTML/CSS/JavaScript prototype and adds a FastAPI modular-monolith backend. It has no student portal and does not depend on an external LMS.
+TeachFlow is an instructor-only course planning platform. **The current target is a local single-user presentation demo, not a hosted product.** Authentication, owner isolation and deployment are intentionally out of scope; see [decision D1](docs/DECISIONS.md). The repository retains its standalone HTML/CSS/JavaScript prototype and adds a FastAPI modular-monolith backend. It has no student portal and does not depend on an external LMS.
 
 ## Current implementation
 

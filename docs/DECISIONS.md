@@ -27,18 +27,28 @@
 
 **Workflow amendment, 22 November 2026.** PR #5 merged at 58927ec. The owner superseded milestone branches and PRs with small verified commits pushed directly to main under AGENTS.md. Phase 01 is authorized. Phase 02 requires B1 approval. All A1 engineering requirements remain in effect.
 
+## D1 — Owner-approved local-demo scope (22 November 2026)
+
+TeachFlow is a **single-user local presentation application** using the existing instructor UI, FastAPI and SQLite. This decision supersedes older P0 requirements, milestone prompts, and historical audit statements that require authentication, owner/tenant isolation, admin accounts, hosting, public deployment, CI/CD, production backups, or production infrastructure. **Do not implement or block on those features.**
+
+The completion goal is a convincing working local demo: create course/groups, import schedule and materials, generate/edit/approve a roadmap that saves relationships intact, show group-specific progress and benchmarks, navigate functional dashboard/list/materials/approvals, review a synthetic transcript, approve a post-session package, and ask the grounded Instructor Assistant questions. Keep human approval and small reversible commits.
+
+Local safeguards still apply: keep the app on localhost; synthetic/non-sensitive demo content; no hard-coded/committed secrets; basic file validation; clear failures and honest AI fallback. Any new paid external provider or sending of sensitive recording data still requires approval.
+
+**Acceptance replacement:** TF-01 (authentication and ownership) is OUT OF SCOPE. TF-13 is a repeatable **localhost end-to-end demonstration**, not production deployment. Simple local approval/version records suffice; no enterprise audit subsystem required.
+
 ## Later decisions
 
 | When needed | Owner decision and bounded default proposed for discussion |
 | --- | --- |
 | Phase 01, scope gate | Confirm team availability, six-week target/demo audience, budget ceiling and P0 acceptance, including Office/legacy format expectations. Escalate any P0 trade-off. |
 | Phase 02, UX gate | Confirm setup/review journey, group navigation, keyboard list, failure/recovery and minimal mobile flow. |
-| Phase 03, before auth/schema work | Approve instructor identity source, optional admin power and tenant boundary. Agree ownership and migration/backfill for existing unowned courses. |
-| Phase 03, before deployment/storage design | Confirm local demo vs managed or self-hosted target, region, database, backups, storage, encryption, retention/deletion and access to transcript evidence. |
+| Phase 03, before schema work | No authentication or ownership work per D1. Approve only destructive or broad graph-data changes. |
+| Phase 03, storage | Local SQLite and local files only; no hosting/deployment decision. Ask before using real recordings or new external processing providers. |
 | Before calendar integration | Select provider, scopes and token lifecycle if OAuth is required. Prefer ICS/CSV import and explicit refresh for the first demo. |
 | Before external AI calls or sensitive uploads | Choose provider, eligible content, residency, model, per-run/monthly budget, logging and fallback. Existing Groq configuration is historical. No paid selection or live calls in Phase 00. |
 | Before audio intake/transcription | Approve consent, retention, deletion, access and any third-party processor. Use synthetic uploaded transcript text for the first evaluation. |
-| Before migration/release | Approve destructive changes separately, if any. Confirm license/distribution intent, deployment target, release criteria and rollback/restore owner. |
+| Before final presentation | Approve destructive changes separately, if any; test the localhost walkthrough with synthetic fixtures and report honest limitations. |
 
 ## B1 · Product baseline proposed for approval
 

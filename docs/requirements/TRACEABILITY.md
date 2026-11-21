@@ -1,10 +1,10 @@
 # P0 requirements and verification catalogue
 
-Proposed for B1. This indexed catalogue combines functional requirements, stories, business rules, acceptance criteria and traceability. Each row links the Phase 00 TF identifier to the detailed case below. Planned checks describe future implementation acceptance. Current evidence remains in the [baseline](../REQUIREMENTS_TRACEABILITY.md).
+Under scope decision D1, TF-01 (authentication/ownership) is out of scope and TF-13 is replaced with a localhost end-to-end demo; the original acceptance text remains as historical planning where explicitly labeled. This indexed catalogue combines functional requirements, stories, business rules, acceptance criteria and traceability. Each row links the Phase 00 TF identifier to the detailed case below. Planned checks describe future implementation acceptance. Current evidence remains in the [baseline](../REQUIREMENTS_TRACEABILITY.md).
 
 | Baseline | Requirement / story / acceptance | Phase | Test type |
 | --- | --- | --- | --- |
-| TF-01 | [TF-FR-001 · TF-US-001 · TF-AC-001](#case-001) | 04 | API authorization |
+| TF-01 | [Historical access requirement — out of scope D1](#case-001) | — | Not a local-demo acceptance gate |
 | TF-02 | [TF-FR-002 · TF-US-002 · TF-AC-002](#case-002) | 05 | Importer integration |
 | TF-03 | [TF-FR-003 · TF-US-003 · TF-AC-003](#case-003) | 05 | Parser fixtures + integration |
 | TF-04 | [TF-FR-004 · TF-US-004 · TF-AC-004](#case-004) | 06 | API + browser |
@@ -16,11 +16,14 @@ Proposed for B1. This indexed catalogue combines functional requirements, storie
 | TF-10 | [TF-FR-010 · TF-US-010 · TF-AC-010](#case-010) | 09 | Tool contracts + evaluation |
 | TF-11 | [TF-FR-011 · TF-US-011 · TF-AC-011](#case-011) | 07 | Query integration + browser |
 | TF-12 | [TF-FR-012 · TF-US-012 · TF-AC-012](#case-012) | 06–09 | Transaction + concurrency |
-| TF-13 | [TF-FR-013 · TF-US-013 · TF-AC-013](#case-013) | 10 | Restore + end-to-end |
+| TF-13 | [Local demo replacement](#case-013) | Final | Repeatable localhost E2E |
 
 <a id="case-001"></a>
 
-## Access
+## Access — historical and OUT OF SCOPE under D1
+
+Do not implement or test the original login/ownership requirements for this local single-user demo.
+
 
 **TF-FR-001.** Restrict every course read, file, search, job and mutation to the authorized owner. Limit optional admin actions to approved configuration.
 
@@ -164,15 +167,13 @@ Given stale edits, when approving, then require renewed review. Duplicate approv
 
 <a id="case-013"></a>
 
-## Deployment
+## Local end-to-end demo (TF-13 replaced by D1)
 
-**TF-FR-013.** Provide reproducible secure setup, migration, health checks, backup, restore and demo instructions.
+**TF-FR-013.** Demonstrate the core instructor workflow locally using FastAPI and SQLite.
 
-**TF-US-013.** As an installation operator, I want to recover a working private installation as its operator.
+**TF-US-013.** As a project evaluator, I can start the app and complete course, import, roadmap, approval, progress, review and assistant tasks without signing in.
 
-**TF-AC-013.** Given a clean approved environment and a synthetic backup, when I deploy, migrate, restore and run the acceptance demo, then both groups, approvals and source references survive and ownership checks pass.
-
-Given missing secrets or an unsuccessful migration, when starting the service, then report an actionable readiness failure for required dependencies and protect existing data. Optional AI credentials enable a labeled fallback. Repeating deployment must preserve records.
+**TF-AC-013.** A reproducible synthetic localhost demonstration completes all P0 interactions, preserves graph and group state across reloads, and provides clear errors/manual fallback when external AI is unavailable. No hosted deployment, two-owner isolation or production backup/restore is required.
 
 ## Cross-cutting acceptance
 
@@ -180,12 +181,12 @@ Apply TF-NFR-001 to every story. For every write, repeat the request after a sim
 
 | ID | Requirement and verification |
 | --- | --- |
-| TF-NFR-001 | With two owners, exercise every operation using valid, absent and foreign identity. Require scoped results and unchanged foreign records. Redact secrets and personal content from logs. |
+| TF-NFR-001 | D1 local replacement: keep localhost access and synthetic demo data; do not commit secrets. No identity/tenant tests. |
 | TF-NFR-002 | Complete setup, graph/list editing, review and approval by keyboard, with visible focus, named controls, announced errors and text equivalents for color. At 320 CSS pixels verify access to all actions and readable detail. |
 | TF-NFR-003 | Measure p95 reads and import reliability on the [pilot fixture](../product/SUCCESS_METRICS.md). Display loading, empty, partial, stale, offline and retry feedback wherever applicable. |
 | TF-NFR-004 | Bound upload bytes and parsing resources. Exercise invalid content, path-like filenames and interrupted imports. Keep supported originals versioned under the approved retention policy. |
 | TF-NFR-005 | Enforce schema validation, scoped tool access, source checks, bounded retries and approved spending limits. With the provider unavailable, verify no fabricated success or irreversible action. |
-| TF-NFR-006 | Re-run existing API regressions and legacy data fixtures. Verify backup/restore and migration on the approved deployment database before release. Changes to the UI must preserve the public API contract. |
+| TF-NFR-006 | Re-run local SQLite/API and frontend tests; validate the complete localhost demonstration and preserve existing API behavior. No hosted restore/deployment requirement. |
 
 ## Business rules and glossary
 

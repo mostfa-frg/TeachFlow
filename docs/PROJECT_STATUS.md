@@ -1,6 +1,6 @@
-# Current milestone · Phase 01
+# Current project status — local presentation scope
 
-Product definition, pilot metrics, scope and acceptance catalogue are on main for B1 review. Product approval is pending. The implementation gaps below remain open.
+**D1 approved (22 November 2026):** one-instructor localhost demo only. **Authentication, multi-user ownership and deployment are OUT OF SCOPE**, not active blockers. The Phase 00 table below is retained as historical audit evidence. Active missing functionality: session relationship persistence, complete navigation, calendar/material ingestion, group-specific benchmarks, transcript review, follow-up package and Instructor Assistant. See [current P0 definition](product/MVP_SCOPE.md).
 
 ## Phase 00 baseline
 
