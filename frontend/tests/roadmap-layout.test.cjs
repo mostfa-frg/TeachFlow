@@ -46,3 +46,22 @@ test('zoom scales the dynamic roadmap canvas rather than a fixed 660x460 view', 
   assert.match(source, /baseHeight\*next/);
   assert.doesNotMatch(source, /660\*next/);
 });
+
+test('roadmap selection never forces a closed detail panel open', () => {
+  const source = script.split('\n').find(line => line.startsWith('function selectRoadmapNode('));
+  assert.ok(source);
+  assert.match(source, /state\.selectedNode=nextId/);
+  assert.match(source, /state\.showDetail&&panel/);
+  assert.doesNotMatch(source, /state\.showDetail=true|render\(\)/);
+  assert.match(script, /case'select-node':selectRoadmapNode\(b\.dataset\.id\);break/);
+  assert.match(html, /\.reference-detail\{animation:none\}/);
+});
+test('custom dropdowns preserve native form values and support keyboard interaction', () => {
+  assert.match(html, /\.tf-select-menu\{position:fixed/);
+  assert.match(html, /\.tf-select-option\[aria-selected="true"\]/);
+  assert.match(script, /function enhanceSelects\(root=document\)/);
+  assert.match(script, /item\.setAttribute\('role','option'\)/);
+  assert.match(script, /select\.dispatchEvent\(new Event\('change',\{bubbles:true\}\)\)/);
+  assert.match(script, /event\.key==='Escape'/);
+  assert.match(script, /enhanceSelects\(app\)/);
+});

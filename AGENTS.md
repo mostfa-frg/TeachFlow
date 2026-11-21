@@ -5,3 +5,5 @@ Before each milestone, read [the operating contract](CODEX_RULES.md), [the canon
 Work directly on main for authorized milestones. Fetch origin/main before starting and before pushing. Preserve local and remote changes. Fast-forward when possible. If histories diverge, merge remote changes, inspect the result, and repeat relevant validation before a normal push. Never force push, rewrite history or discard work. Use feature branches or pull requests only at the owner's explicit request. Make small reversible commits, run applicable checks, maintain the project records and stop at mandatory approval gates.
 
 Keep TeachFlow instructor-only. Preserve human review for generated changes. Record the outcome, checks and limitations at every handoff.
+
+UI interaction regression guards: Do not automatically reopen a user-closed session details panel when a roadmap node changes; preserve roadmap selection, focus and editing context across updates. Use the accessible TeachFlow-styled dropdown enhancement for selects rather than raw browser dropdown popups. Keep focused regression checks for these behaviors.
