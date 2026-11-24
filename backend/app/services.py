@@ -7,6 +7,7 @@ import httpx
 from pypdf.errors import PdfReadError, PdfStreamError
 from pypdf import PdfReader
 
+from app.graph import validate_session_graph
 from app.core.config import Settings, settings
 from app.schemas import RoadmapProposal
 
@@ -136,8 +137,10 @@ def validate_roadmap(
             raise InvalidRoadmap("Session goals must not be blank.")
     if not referenced_material_ids <= (known_material_ids or set()):
         raise InvalidRoadmap("A session references a material outside this course.")
-    if {session.topic_id for session in proposal.sessions} != topic_ids:
-        raise InvalidRoadmap("Every topic must contain at least one session.")
+    try:
+        validate_session_graph(proposal)
+    except ValueError as exc:
+        raise InvalidRoadmap(str(exc)) from exc
     outgoing: dict[str, list[str]] = defaultdict(list)
     indegree = {topic_id: 0 for topic_id in topic_ids}
     edges: set[tuple[str, str]] = set()

@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
+from app.graph import as_proposal, write_graph
 from app.db import get_db
 from app.models import (
     Course,
@@ -379,12 +380,9 @@ def list_materials(course_id: str, db: Session = Depends(get_db)) -> list[Materi
 
 
 def _roadmap_response(version: RoadmapVersion) -> RoadmapVersionOut:
-    topics = sorted(version.topics, key=lambda item: item.created_at)
-    topic_order = {topic.id: position for position, topic in enumerate(topics)}
-    sessions = sorted(
-        version.sessions,
-        key=lambda item: (topic_order[item.topic_id], item.sequence_index),
-    )
+    topics = sorted(version.topics, key=lambda item: item.sort_order)
+    sessions = sorted(version.sessions, key=lambda item: item.sort_order)
+    session_ids = {s.id: s.stable_id for s in sessions}
     by_internal_id = {topic.id: topic.stable_id for topic in topics}
     return RoadmapVersionOut(
         id=version.id,
@@ -395,6 +393,8 @@ def _roadmap_response(version: RoadmapVersion) -> RoadmapVersionOut:
         approved_at=version.approved_at,
         topics=[TopicOut.model_validate(topic) for topic in topics],
         sessions=[SessionOut.model_validate(session) for session in sessions],
+        session_edges=[dict(from_session_id=session_ids[e.from_session_id], to_session_id=session_ids[e.to_session_id],
+                            edge_type=e.edge_type, note=e.note) for e in version.session_edges],
         dependencies=[
             DependencyOut(
                 prerequisite_topic_id=by_internal_id[edge.prerequisite_topic_id],
@@ -411,7 +411,8 @@ def _get_roadmap(db: Session, roadmap_id: str) -> RoadmapVersion:
         .where(RoadmapVersion.id == roadmap_id)
         .options(
             selectinload(RoadmapVersion.topics),
-            selectinload(RoadmapVersion.sessions),
+            selectinload(RoadmapVersion.sessions).selectinload(TeachingSession.member_topics),
+            selectinload(RoadmapVersion.session_edges),
             selectinload(RoadmapVersion.dependencies),
         )
     )
@@ -585,42 +586,18 @@ def generate_roadmap(
         warnings=proposal.warnings,
         idempotency_key=idempotency_key,
     )
-    topic_by_stable_id = {
-        item.id: Topic(
-            stable_id=item.id,
-            title=item.title,
-            description=item.description,
-            learning_objectives=item.learning_objectives,
-            support_note=item.support_note,
-        )
-        for item in proposal.topics
-    }
-    roadmap.topics.extend(topic_by_stable_id.values())
-    db.add(roadmap)
-    db.flush()
-    for item in proposal.sessions:
-        roadmap.sessions.append(
-            TeachingSession(
-                topic=topic_by_stable_id[item.topic_id],
-                stable_id=item.id,
-                sequence_index=item.sequence_index,
-                title=item.title,
-                description=item.description,
-                learning_objectives=(item.learning_objectives or next(t for t in proposal.topics if t.id == item.topic_id).learning_objectives),
-                duration_minutes=item.duration_minutes,
-                supporting_material_ids=item.supporting_material_ids,
-            )
-        )
-    for edge in proposal.dependencies:
-        roadmap.dependencies.append(
-            TopicDependency(
-                prerequisite_topic_id=topic_by_stable_id[
-                    edge.prerequisite_topic_id
-                ].id,
-                dependent_topic_id=topic_by_stable_id[edge.dependent_topic_id].id,
-            )
-        )
-    db.commit()
+    try:
+        db.add(roadmap)
+        db.flush()
+        write_graph(db, roadmap, proposal)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if idempotency_key:
+            winner = db.scalar(select(RoadmapVersion).filter_by(course_id=course_id, idempotency_key=idempotency_key))
+            if winner:
+                return _roadmap_response(winner)
+        raise HTTPException(409, "Another version was saved. Retry generation.") from exc
     return _roadmap_response(_get_roadmap(db, roadmap.id))
 
 
@@ -667,19 +644,14 @@ def create_draft_from_approved(course_id: str, db: Session = Depends(get_db)) ->
         raise HTTPException(404, "No approved roadmap exists for this course.")
     latest = db.scalar(select(RoadmapVersion.version_number).where(RoadmapVersion.course_id == course_id).order_by(RoadmapVersion.version_number.desc()).limit(1)) or source.version_number
     draft = RoadmapVersion(course_id=course_id, version_number=latest + 1, state="draft", warnings=list(source.warnings or []))
-    db.add(draft)
-    db.flush()
-    topic_map = {}
-    for old in source.topics:
-        new_topic = Topic(roadmap_version_id=draft.id, stable_id=old.stable_id, title=old.title, description=old.description, learning_objectives=list(old.learning_objectives or []), support_note=old.support_note)
-        db.add(new_topic)
-        topic_map[old.id] = new_topic
-    db.flush()
-    for old in source.sessions:
-        db.add(TeachingSession(roadmap_version_id=draft.id, topic_id=topic_map[old.topic_id].id, stable_id=old.stable_id, sequence_index=old.sequence_index, title=old.title, description=old.description, learning_objectives=list(old.learning_objectives or []), duration_minutes=old.duration_minutes, supporting_material_ids=list(old.supporting_material_ids or [])))
-    for edge in source.dependencies:
-        db.add(TopicDependency(roadmap_version_id=draft.id, prerequisite_topic_id=topic_map[edge.prerequisite_topic_id].id, dependent_topic_id=topic_map[edge.dependent_topic_id].id))
-    db.commit()
+    try:
+        db.add(draft)
+        db.flush()
+        write_graph(db, draft, as_proposal(_roadmap_response(source)))
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "Another version was saved. Retry opening the draft.") from exc
     return _roadmap_response(_get_roadmap(db, draft.id))
 
 
@@ -718,43 +690,9 @@ def edit_roadmap(
     db.query(TopicDependency).filter_by(roadmap_version_id=roadmap.id).delete()
     db.query(TeachingSession).filter_by(roadmap_version_id=roadmap.id).delete()
     db.query(Topic).filter_by(roadmap_version_id=roadmap.id).delete()
-    topic_by_id = {
-        item.id: Topic(
-            roadmap_version_id=roadmap.id,
-            stable_id=item.id,
-            title=item.title,
-            description=item.description,
-            learning_objectives=item.learning_objectives,
-            support_note=item.support_note,
-        )
-        for item in proposal.topics
-    }
-    db.add_all(topic_by_id.values())
-    db.flush()
-    for item in proposal.sessions:
-        db.add(
-            TeachingSession(
-                roadmap_version_id=roadmap.id,
-                topic_id=topic_by_id[item.topic_id].id,
-                stable_id=item.id,
-                sequence_index=item.sequence_index,
-                title=item.title,
-                description=item.description,
-                learning_objectives=(item.learning_objectives or next(t for t in proposal.topics if t.id == item.topic_id).learning_objectives),
-                duration_minutes=item.duration_minutes,
-                supporting_material_ids=item.supporting_material_ids,
-            )
-        )
-    for edge in proposal.dependencies:
-        db.add(
-            TopicDependency(
-                roadmap_version_id=roadmap.id,
-                prerequisite_topic_id=topic_by_id[edge.prerequisite_topic_id].id,
-                dependent_topic_id=topic_by_id[edge.dependent_topic_id].id,
-            )
-        )
     roadmap.warnings = proposal.warnings
     try:
+        write_graph(db, roadmap, proposal)
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -899,3 +837,27 @@ def list_group_progress(
             .order_by(GroupSessionProgress.created_at)
         ).all()
     )
+
+@router.get("/api/v1/courses/{course_id}/roadmaps")
+def versions(course_id: str, db: Session = Depends(get_db)):
+    if not db.get(Course, course_id):
+        raise HTTPException(404, "Course not found.")
+    rows = db.scalars(select(RoadmapVersion).filter_by(course_id=course_id).order_by(RoadmapVersion.version_number.desc()))
+    return [dict(id=r.id, version_number=r.version_number, state=r.state, approved_at=r.approved_at) for r in rows]
+
+
+@router.get("/api/v1/roadmaps/{roadmap_id}/diff/{other_id}")
+def diff_versions(roadmap_id: str, other_id: str, db: Session = Depends(get_db)):
+    first, second = (_get_roadmap(db, key) for key in (roadmap_id, other_id))
+    if first.course_id != second.course_id:
+        raise HTTPException(422, "Versions must belong to the same course.")
+    a, b = (as_proposal(_roadmap_response(row)) for row in (first, second))
+
+    def changes(before, after, key):
+        left, right = ({key(x): x for x in items} for items in (before, after))
+        return dict(added=[right[k] for k in sorted(right.keys()-left.keys())],
+                    removed=[left[k] for k in sorted(left.keys()-right.keys())],
+                    changed=[dict(before=left[k], after=right[k]) for k in sorted(right.keys() & left.keys()) if left[k] != right[k]])
+
+    return dict(sessions=changes(a.sessions, b.sessions, lambda s: s.id),
+                links=changes(a.session_edges, b.session_edges, lambda e: (e.from_session_id, e.to_session_id, e.edge_type)))

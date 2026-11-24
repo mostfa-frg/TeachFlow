@@ -1,7 +1,7 @@
 """Validated API and roadmap-generation contracts."""
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -67,8 +67,19 @@ class MaterialOut(ORMModel):
     created_at: datetime
 
 
+StableId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,80}$")]
+EdgeType = Literal["prerequisite", "depends_on", "reinforces", "extends", "introduces", "applies"]
+
+
+class SessionEdgeProposal(BaseModel):
+    from_session_id: StableId
+    to_session_id: StableId
+    edge_type: EdgeType
+    note: str | None = Field(default=None, max_length=500)
+
+
 class TopicProposal(BaseModel):
-    id: str = Field(min_length=1, max_length=80)
+    id: StableId
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=4000)
     learning_objectives: list[str] = Field(min_length=1, max_length=20)
@@ -76,8 +87,9 @@ class TopicProposal(BaseModel):
 
 
 class SessionProposal(BaseModel):
-    id: str = Field(min_length=1, max_length=80)
-    topic_id: str = Field(min_length=1, max_length=80)
+    id: StableId
+    topic_ids: list[StableId] = Field(default_factory=list, max_length=100)
+    topic_id: StableId
     sequence_index: int = Field(ge=1, le=500)
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=4000)
@@ -87,13 +99,14 @@ class SessionProposal(BaseModel):
 
 
 class DependencyProposal(BaseModel):
-    prerequisite_topic_id: str = Field(min_length=1, max_length=80)
-    dependent_topic_id: str = Field(min_length=1, max_length=80)
+    prerequisite_topic_id: StableId
+    dependent_topic_id: StableId
 
 
 class RoadmapProposal(BaseModel):
     topics: list[TopicProposal] = Field(min_length=1, max_length=100)
     sessions: list[SessionProposal] = Field(min_length=1, max_length=200)
+    session_edges: list[SessionEdgeProposal] | None = Field(default=None, max_length=1200)
     dependencies: list[DependencyProposal] = Field(default_factory=list, max_length=300)
     warnings: list[str] = Field(default_factory=list, max_length=30)
 
@@ -117,6 +130,8 @@ class RoadmapProposal(BaseModel):
 class SessionOut(ORMModel):
     id: str
     stable_id: str
+    topic_ids: list[str]
+    sort_order: int
     topic_id: str
     sequence_index: int
     title: str
@@ -127,6 +142,7 @@ class SessionOut(ORMModel):
 
 
 class TopicOut(ORMModel):
+    sort_order: int
     id: str
     stable_id: str
     title: str
@@ -149,6 +165,7 @@ class RoadmapVersionOut(ORMModel):
     approved_at: datetime | None
     topics: list[TopicOut]
     sessions: list[SessionOut]
+    session_edges: list[SessionEdgeProposal]
     dependencies: list[DependencyOut]
 
 

@@ -53,3 +53,14 @@ Local safeguards still apply: keep the app on localhost; synthetic/non-sensitive
 ## B1 · Product baseline proposed for approval
 
 Approve an instructor teaching multiple groups as the pilot user, the [P0 boundary and fallback modes](product/MVP_SCOPE.md), and a private local pilot using synthetic inputs? Option A adopts this baseline and validates the proposed metrics during the pilot. Option B requests specific revisions. Secure deployment remains a release criterion. Provider selection, hosting, consent and spending stay at their later gates. Phase 02 awaits the owner's decision.
+
+## B1 approved · 24 November 2026
+
+The owner approved option A and the six implementation priorities for the D1 local demo.
+Keep the six relationship labels in the brief. Prerequisite and depends_on point from
+required session to dependent session and share a cycle check. Reinforces, extends,
+introduces and applies point from acting session to referenced session. Optional notes
+describe the link. An empty explicit link list is meaningful. Older proposals without
+a link list inherit within-topic sequence and last-to-first topic prerequisites.
+Historical data cannot reconstruct links lost before this change. Keep topic_dependencies
+for older clients. A later removal would require a separate owner decision.

@@ -140,6 +140,7 @@ class RoadmapVersion(TimestampMixin, Base):
     sessions: Mapped[list["TeachingSession"]] = relationship(
         back_populates="roadmap_version", cascade="all, delete-orphan"
     )
+    session_edges: Mapped[list["SessionEdge"]] = relationship(cascade="all, delete-orphan")
     dependencies: Mapped[list["TopicDependency"]] = relationship(
         back_populates="roadmap_version", cascade="all, delete-orphan"
     )
@@ -153,6 +154,7 @@ class Topic(TimestampMixin, Base):
     roadmap_version_id: Mapped[str] = mapped_column(
         ForeignKey("roadmap_versions.id", ondelete="CASCADE"), index=True
     )
+    sort_order: Mapped[int] = mapped_column(default=0, server_default="0")
     stable_id: Mapped[str] = mapped_column(String(80), nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -180,6 +182,7 @@ class TeachingSession(TimestampMixin, Base):
     topic_id: Mapped[str] = mapped_column(
         ForeignKey("topics.id", ondelete="CASCADE"), index=True
     )
+    sort_order: Mapped[int] = mapped_column(default=0, server_default="0")
     stable_id: Mapped[str] = mapped_column(String(80), nullable=False)
     sequence_index: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -188,10 +191,32 @@ class TeachingSession(TimestampMixin, Base):
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     supporting_material_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     roadmap_version: Mapped[RoadmapVersion] = relationship(back_populates="sessions")
+    member_topics: Mapped[list[Topic]] = relationship(secondary="session_topics", viewonly=True, order_by="Topic.sort_order")
+
+    @property
+    def topic_ids(self) -> list[str]:
+        return [topic.stable_id for topic in self.member_topics]
+
     topic: Mapped[Topic] = relationship(back_populates="sessions")
     progress: Mapped[list["GroupSessionProgress"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
     )
+
+
+class SessionTopic(Base):
+    __tablename__ = "session_topics"
+    session_id: Mapped[str] = mapped_column(ForeignKey("teaching_sessions.id", ondelete="CASCADE"), primary_key=True)
+    topic_id: Mapped[str] = mapped_column(ForeignKey("topics.id", ondelete="CASCADE"), primary_key=True)
+
+
+class SessionEdge(Base):
+    __tablename__ = "session_edges"
+    __table_args__ = (CheckConstraint("from_session_id != to_session_id", name="ck_edge_not_self"),)
+    roadmap_version_id: Mapped[str] = mapped_column(ForeignKey("roadmap_versions.id", ondelete="CASCADE"), primary_key=True)
+    from_session_id: Mapped[str] = mapped_column(ForeignKey("teaching_sessions.id", ondelete="CASCADE"), primary_key=True)
+    to_session_id: Mapped[str] = mapped_column(ForeignKey("teaching_sessions.id", ondelete="CASCADE"), primary_key=True)
+    edge_type: Mapped[str] = mapped_column(String(32), primary_key=True)
+    note: Mapped[str | None] = mapped_column(String(500))
 
 
 class TopicDependency(Base):
