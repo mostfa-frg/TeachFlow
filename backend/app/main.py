@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.api.v1.router import router
+from app.assistant import router as assistant_router
 from app.review import router as review_router
 from app.workspace import router as workspace_router
 from app.core.logging import configure_logging
@@ -73,3 +74,4 @@ app.include_router(router)
 
 app.include_router(workspace_router)
 app.include_router(review_router)
+app.include_router(assistant_router)

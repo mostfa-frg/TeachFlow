@@ -40,3 +40,7 @@ const reviewApi = {
 function jsonRequest(path, method, value) {
   return apiRequest(path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(value)});
 }
+
+function askInstructor(course,group,question) {
+  return jsonRequest('/courses/'+course+'/assistant','POST',{group_id:group,question});
+}
