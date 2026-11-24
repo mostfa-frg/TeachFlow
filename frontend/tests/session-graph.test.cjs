@@ -27,3 +27,19 @@ test('legacy session identifiers are escaped in rendered attributes',()=>{
   const html=ctx.roadmapCanvas([{id,title:'Saved session',minutes:20}],[],null,null,true);
   assert.ok(html.includes('data-id="lesson&amp;one"'));
 });
+
+test('session details show every cited material and only its selected passages', () => {
+  const materials = ['a', 'b', 'c', 'd', 'unused'].map(id => ({
+    id, name: id + '.txt', chunks: [
+      {id: id + '-chosen', locator: 'Page ' + id},
+      {id: id + '-other', locator: 'Other passage'}
+    ]
+  }));
+  const ids = ['a', 'b', 'c', 'd'];
+  const html = context.sessionCitations(materials, {
+    supportingMaterialIds: ids, chunkIds: ids.map(id => id + '-chosen')
+  }, String);
+  for (const id of ids) assert.ok(html.includes(id + '.txt Page ' + id));
+  assert.doesNotMatch(html, /unused|Other passage/);
+  assert.match(context.sessionCitations(materials, {}, String), /No materials linked yet/);
+});

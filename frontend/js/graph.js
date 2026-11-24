@@ -56,3 +56,16 @@ function citationPicker(materials, session, escape) {
   if (!choices.length) return '';
   return `<label>Supporting passages<select id="session-citations" multiple>${choices.join('')}</select></label>`;
 }
+
+function sessionCitations(materials, session, escape) {
+  const sources = new Set(session.supportingMaterialIds || []);
+  const passages = new Set(session.chunkIds || []);
+  const cited = materials.filter(material => sources.has(material.apiId || material.id));
+  if (!cited.length) return '<span class="small muted">No materials linked yet</span>';
+  return cited.map(material => {
+    const locations = (material.chunks || [])
+      .filter(chunk => passages.has(chunk.id))
+      .map(chunk => escape(chunk.locator));
+    return `<div class="small">▤ ${escape(material.filename || material.name)} ${locations.join(', ')}</div>`;
+  }).join('');
+}
