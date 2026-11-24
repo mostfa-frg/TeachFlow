@@ -27,7 +27,10 @@ function syncElement(current, next) {
     if (previous[name] !== value) current.setAttribute(name, value);
   }
   renderedAttributes.set(current, attrs);
-  syncChildren(current, next);
+  if (next.hasAttribute('data-counter')) {
+    if(current.dataset.target!==next.textContent)countTo(current,next.textContent);
+    current.dataset.target=next.textContent;
+  } else syncChildren(current, next);
   if (current.matches('select') && current.parentElement?.matches('.tf-select')) {
     const label = current.parentElement.querySelector('.tf-select-value');
     if (label) label.textContent = current.selectedOptions[0]?.textContent || 'Choose an option';
@@ -35,6 +38,7 @@ function syncElement(current, next) {
 }
 
 function syncChildren(parent, template) {
+  const before = measureList(parent, Array.from(template.children || [], nodeKey));
   const available = Array.from(parent.childNodes);
   const keyed = new Map(available.filter(nodeKey).map(n => [nodeKey(n), n]));
   let cursor = parent.firstChild;
@@ -53,6 +57,7 @@ function syncChildren(parent, template) {
     cursor = cursor.nextSibling;
     removed.remove();
   }
+  settleList(parent,before);
 }
 
 function patchRegion(root, markup, fresh = false) {
