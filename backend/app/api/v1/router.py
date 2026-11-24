@@ -292,7 +292,7 @@ def upload_material(
         destination.unlink(missing_ok=True)
         storage_name = f"rejected-{ident}"
         processing_state = "unsupported"
-        error_message = "Use a text PDF, TXT, Markdown or source code. Export Office documents to text first."
+        error_message = "Unsupported format. Export DOCX or PPTX to text or a text-based PDF. TXT, Markdown and supported source files are also accepted."
     elif size == 0:
         destination.unlink(missing_ok=True)
         processing_state = "empty"
@@ -401,19 +401,27 @@ def list_materials(course_id: str, db: Session = Depends(get_db)) -> list[Materi
 
 
 def validate_chunk_references(proposal, sources):
+    by_material = {}
+    for key, material in sources.items():
+        by_material.setdefault(material, []).append(key)
+
     for session in proposal.sessions:
+        cited = set()
         for key in session.supporting_chunk_ids:
             if key not in sources:
                 raise InvalidRoadmap("A session cites an unavailable material chunk.")
-            if sources[key] not in session.supporting_material_ids:
-                session.supporting_material_ids.append(sources[key])
-        if session.supporting_material_ids and not session.supporting_chunk_ids:
-            for material in session.supporting_material_ids:
-                options = [key for key, parent in sources.items() if parent == material]
-                if len(options) == 1:
-                    session.supporting_chunk_ids.extend(options)
-                else:
-                    raise InvalidRoadmap("Choose a supporting chunk for each cited material.")
+            material = sources[key]
+            cited.add(material)
+            if material not in session.supporting_material_ids:
+                session.supporting_material_ids.append(material)
+        for material in session.supporting_material_ids:
+            if material in cited:
+                continue
+            options = by_material.get(material, [])
+            if len(options) != 1:
+                raise InvalidRoadmap("Choose a supporting chunk for each cited material.")
+            session.supporting_chunk_ids.append(options[0])
+            cited.add(material)
 
 
 def _roadmap_response(version: RoadmapVersion) -> RoadmapVersionOut:

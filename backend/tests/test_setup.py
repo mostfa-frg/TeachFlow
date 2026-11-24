@@ -90,3 +90,27 @@ def test_old_material_exports_are_indexed_once(client, monkeypatch, tmp_path):
     refs = client.get(path).json()[0]["chunks"]
     assert len(refs) == 1 and refs[0]["locator"] == "Chars 0–22"
     assert client.get(path).json()[0]["chunks"] == refs
+
+
+def test_each_cited_material_has_a_located_chunk(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(router, "settings", replace(router.settings, data_dir=tmp_path))
+    course = create_course(client)["id"]
+    materials = f"/api/v1/courses/{course}/materials"
+    short = client.post(materials, files={"file": ("brief.txt", "Functions.", "text/plain")}).json()
+    long = client.post(materials, files={"file": ("notes.md", "# One\nFunctions.\n# Two\nLoops.", "text/plain")}).json()
+    proposal = sample_proposal(short["id"])
+    monkeypatch.setattr(router, "roadmap_generator", StubGenerator(proposal))
+    draft = client.post(f"/api/v1/courses/{course}/roadmaps/generate").json()["id"]
+    session = proposal["sessions"][0]
+    session["supporting_material_ids"] = [short["id"], long["id"]]
+    session["supporting_chunk_ids"] = [short["chunks"][0]["id"]]
+    url = "/api/v1/roadmaps/" + draft
+    assert client.put(url, json=proposal).status_code == 422
+    # For a legacy reference to a one-chunk file, the locator is unambiguous.
+    session["supporting_chunk_ids"] = [long["chunks"][1]["id"]]
+    saved = client.put(url, json=proposal)
+    saved.raise_for_status()
+    expected = {long["chunks"][1]["id"], short["chunks"][0]["id"]}
+    assert set(saved.json()["sessions"][0]["supporting_chunk_ids"]) == expected
+    client.post(url + "/approve").raise_for_status()
+    assert set(client.get(url).json()["sessions"][0]["supporting_chunk_ids"]) == expected
