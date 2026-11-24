@@ -5,9 +5,14 @@ function remindersView(facts, escape) {
     <button class="btn" data-action="open-session" data-id="${escape(row.missing_id)}">Open ${escape(row.missing)}</button></p>`).join('')}</section>`;
 }
 
-function workspaceView(screen, course, group, escape) {
+function workspaceView(screen, course, group, escape, loadStatus = 'ready') {
   const titles = {'materials':'Materials','approvals':'Pending approvals','roadmap-list':'Session list','roadmap-progress':'Group benchmarks'};
   if (!titles[screen]) return null;
+  if (loadStatus === 'loading') {
+    return `<section aria-busy="true"><h1>${titles[screen]}</h1><p role="status">Loading saved records…</p></section>`;
+  }
+  // The shared page alert supplies the error and retry button.
+  if (loadStatus === 'error') return `<section><h1>${titles[screen]}</h1></section>`;
   const facts = course?.overview?.[group?.id];
   let rows = [];
   if (screen === 'materials') {

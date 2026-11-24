@@ -43,3 +43,15 @@ test('the selected course exposes a distinct open action for every pending propo
   }
   assert.match(context.workspaceView('approvals',{...course,approvals:[]},null,String), /No records to show/);
 });
+
+test('benchmark inputs stay hidden until the saved targets finish loading', () => {
+  const context = load('workspace');
+  const course = {name:'Python', overview:{monday:{sessions:[{
+    title:'Loops', session_id:'loops', state:'upcoming', status:'on track', target_date:'2026-12-07'
+  }]}}};
+  const view = status => context.workspaceView('roadmap-progress', course, {id:'monday'}, String, status);
+  assert.match(view('loading'), /role="status"/);
+  assert.doesNotMatch(view('loading'), /data-action="save-target"/);
+  assert.doesNotMatch(view('error'), /data-action="save-target"/);
+  assert.match(view('ready'), /value="2026-12-07"/);
+});
