@@ -290,3 +290,34 @@ class Benchmark(Base):
     group_id: Mapped[str] = mapped_column(ForeignKey("instructor_groups.id", ondelete="CASCADE"), primary_key=True)
     stable_id: Mapped[str] = mapped_column(String(80), primary_key=True)
     target_date: Mapped[date]
+
+
+class SessionReview(TimestampMixin, Base):
+    __tablename__ = "session_reviews"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    group_id: Mapped[str] = mapped_column(ForeignKey("instructor_groups.id", ondelete="CASCADE"))
+    session_id: Mapped[str] = mapped_column(ForeignKey("teaching_sessions.id", ondelete="CASCADE"))
+    transcript: Mapped[str] = mapped_column(Text)
+    filename: Mapped[str] = mapped_column(String(255))
+    findings: Mapped[list] = mapped_column(JSON)
+    mode: Mapped[str] = mapped_column(String(16))
+    state: Mapped[str] = mapped_column(String(16), default="draft")
+
+
+class FollowUp(TimestampMixin, Base):
+    __tablename__ = "follow_ups"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    review_id: Mapped[str] = mapped_column(ForeignKey("session_reviews.id", ondelete="CASCADE"), unique=True)
+    items: Mapped[dict] = mapped_column(JSON)
+    mode: Mapped[str] = mapped_column(String(16))
+    state: Mapped[str] = mapped_column(String(16), default="draft")
+
+
+class ApprovalEvent(Base):
+    __tablename__ = "approval_events"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    course_id: Mapped[str] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"))
+    entity_id: Mapped[str] = mapped_column(String(36))
+    item: Mapped[str] = mapped_column(String(40))
+    state: Mapped[str] = mapped_column(String(20))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)

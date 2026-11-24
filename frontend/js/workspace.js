@@ -24,5 +24,6 @@ function workspaceView(screen, course, group, escape) {
       <button class="btn" data-action="save-target" data-id="${escape(s.session_id)}">Save target</button></article>`);
   }
   return `<section><h1>${titles[screen]}</h1><p>${escape(course?.name || 'Choose a course')}${group ? ' · '+escape(group.name) : ''}</p>
-    ${screen==='roadmap-progress'?remindersView(facts,escape):''}<div class="groups">${rows.join('')||'<p>No records to show.</p>'}</div></section>`;
+    ${screen==='roadmap-progress'?remindersView(facts,escape):''}<div class="groups">${rows.join('')||'<p>No records to show.</p>'}</div>
+    ${screen==='approvals'?`<h2>Approval history</h2><ul>${(course?.history||[]).map(e=>`<li>${escape(e.timestamp)} · ${escape(e.item)} · ${escape(e.state)}</li>`).join('')||'<li>No changes yet.</li>'}</ul>`:''}</section>`;
 }

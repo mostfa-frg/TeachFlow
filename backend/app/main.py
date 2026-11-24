@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.api.v1.router import router
+from app.review import router as review_router
 from app.workspace import router as workspace_router
 from app.core.logging import configure_logging
 
@@ -71,3 +72,4 @@ app.mount("/js", StaticFiles(directory=Path(__file__).resolve().parents[2] / "fr
 app.include_router(router)
 
 app.include_router(workspace_router)
+app.include_router(review_router)

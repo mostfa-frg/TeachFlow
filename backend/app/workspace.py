@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.graph import HARD_EDGES
 from app.ingestion import DAYS
-from app.models import Benchmark, Course, GroupSessionProgress, InstructorGroup, RoadmapVersion, TeachingSession
+from app.models import SessionReview, FollowUp, Benchmark, Course, GroupSessionProgress, InstructorGroup, RoadmapVersion, TeachingSession
 
 router = APIRouter(prefix="/api/v1")
 
@@ -94,4 +94,13 @@ def approvals(course_id: str, db: Session = Depends(get_db)):
     if not db.get(Course, course_id):
         raise HTTPException(404, "Course not found.")
     drafts = db.scalars(select(RoadmapVersion).filter_by(course_id=course_id,state="draft").order_by(RoadmapVersion.version_number.desc()))
-    return [dict(kind="roadmap", id=row.id, title=f"Roadmap version {row.version_number}") for row in drafts]
+    result = [dict(kind="roadmap", id=row.id, title=f"Roadmap version {row.version_number}") for row in drafts]
+
+    query = select(SessionReview).join(InstructorGroup).where(InstructorGroup.course_id==course_id)
+    for review in db.scalars(query):
+        if review.state=="draft":
+            result.append(dict(kind="review",id=review.id,title="Transcript: "+review.filename))
+        package=db.scalar(select(FollowUp).filter_by(review_id=review.id,state="draft"))
+        if package:
+            result.append(dict(kind="package",id=package.id,title="Follow-up: "+review.filename))
+    return result

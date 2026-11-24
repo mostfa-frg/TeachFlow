@@ -22,3 +22,21 @@ function saveTarget(group, session, date) {
     method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({target_date:date || null})
   });
 }
+
+const reviewApi = {
+  list: (group, session) => apiRequest(`/groups/${group}/sessions/${session}/reviews`),
+  upload(group, session, file) {
+    const body = new FormData();
+    body.append('file',file);
+    return apiRequest(`/groups/${group}/sessions/${session}/reviews`,{method:'POST',body});
+  },
+  read: id => apiRequest('/reviews/'+id),
+  save: (id,findings) => jsonRequest('/reviews/'+id,'PUT',{findings}),
+  approve: id => apiRequest('/reviews/'+id+'/approve',{method:'POST'}),
+  draft: id => apiRequest('/reviews/'+id+'/package',{method:'POST'}),
+  package: id => apiRequest('/packages/'+id),
+  item: (id,key,text,approve) => jsonRequest(`/packages/${id}/items/${key}`,'PUT',{text,approve})
+};
+function jsonRequest(path, method, value) {
+  return apiRequest(path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(value)});
+}

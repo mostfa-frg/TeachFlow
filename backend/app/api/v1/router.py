@@ -18,7 +18,7 @@ from app.ingestion import CODE_TYPES, document_chunks, calendar_preview
 from app.graph import as_proposal, write_graph
 from app.db import get_db
 from app.models import (
-    Course,
+    ApprovalEvent, Course,
     GroupSessionProgress,
     InstructorGroup,
     Material, MaterialChunk,
@@ -802,6 +802,7 @@ def approve_roadmap(roadmap_id: str, db: Session = Depends(get_db)) -> RoadmapVe
         previous.state = "superseded"
     db.flush()
     roadmap.state = "approved"
+    db.add(ApprovalEvent(course_id=roadmap.course_id,entity_id=roadmap.id,item="roadmap",state="approved"))
     roadmap.approved_at = datetime.now(timezone.utc)
     db.commit()
     return _roadmap_response(_get_roadmap(db, roadmap.id))
