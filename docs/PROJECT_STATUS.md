@@ -1,8 +1,21 @@
-# Current project status — local presentation scope
+# TeachFlow project status
 
-**D1 approved (22 November 2026):** one-instructor localhost demo only. **Authentication, multi-user ownership and deployment are OUT OF SCOPE**, not active blockers. The Phase 00 table below is retained as historical audit evidence. Active missing functionality: session relationship persistence, complete navigation, calendar/material ingestion, group-specific benchmarks, transcript review, follow-up package and Instructor Assistant. See [current P0 definition](product/MVP_SCOPE.md).
+**24 November 2026 · Ready to rehearse the single-instructor localhost demo.** The synthetic instructor workflow passes on FastAPI and SQLite, from course setup through a cited assistant answer. Verification passed 54 backend tests, 20 frontend tests and two Chromium workflows. The demo uses recorded responses. Live AI output quality remains unverified.
 
-## Phase 00 baseline
+| Instructor capability | What has been verified |
+| --- | --- |
+| Setup and materials | Direct group entry and local ICS/CSV import produce editable schedules. PDF, Markdown, text and supported code files expose extraction status and located chunks. Office files and scanned PDFs give export guidance. Truncation produces a warning. |
+| Roadmap | Sessions can belong to multiple topics. Six directed link types and optional notes survive draft creation, editing, approval, a fresh GET and browser refresh. The version list and diff report session and link changes, including order changes. SQLite retains the original topic dependency table. |
+| Citations | Each cited material must resolve to at least one passage. The editor lets the instructor choose the passage. Session details display every cited material with its available locators. |
+| Dashboard and progress | Dashboard, keyboard-accessible session list, group targets and prerequisite reminders use saved course data. Changing group changes the progress and missing prerequisites. |
+| Approvals and review | The queue opens draft roadmaps, transcript findings and follow-up packages. Findings have checked evidence offsets or an explicit absence of evidence. Four individual approvals finish a package. The queue count and timestamped history reflect saved decisions. |
+| Assistant | Local retrieval uses the approved plan, material chunks and the selected group's facts. Responses carry references. With no provider, the UI identifies the unavailable answer and shows the retrieved sources. |
+
+The next instructor step is the [manual rehearsal](DEMO_WALKTHROUGH.md), including clipboard use and accessibility on the presentation machine. A live quality evaluation requires separate provider and budget approval. Optional assessments, richer history and folder synchronization belong to the later scope. [Approved scope](product/MVP_SCOPE.md) · [Decisions](DECISIONS.md) · [Current test report](TEST_REPORT.md)
+
+The entries below describe earlier revisions. Use the table above for the current local demo.
+
+## Historical audit · 21–22 November 2026
 
 **Phase 00 discovery delivered for review. MVP incomplete.** The baseline, branch and inventory appear in the [audit](00_AUDIT.md). The branch fills the root instructions file and adds the audit, feasibility experiment, decision and verification records. The reconciled base already contains the canonical brief, project rules and all twelve prompts. The owner approved A1 option A on 22 November 2026. PR #5 merged at 58927ec.
 
@@ -18,6 +31,6 @@
 
 [Tests and limits](TEST_REPORT.md) · [Requirement-by-requirement status](REQUIREMENTS_TRACEABILITY.md) · [Gate A1](DECISIONS.md)
 
-## Focused roadmap UI follow-up · 22 November 2026
+## Historical roadmap UI follow-up · 22 November 2026
 
 The existing instructor shell has been retained. The serpentine roadmap now places session status, title and duration below the path line, reserves outside lanes for curved row transitions, highlights progress-aware sequential segments, and uses a legible zoom floor with horizontal scrolling on narrow viewports. The existing click-to-open session detail panel, accessible dropdowns and approval/progress APIs remain unchanged. This is a presentation update, not a fix for typed session-edge persistence or unfinished MVP features. Visual browser acceptance and the full backend suite are still required.

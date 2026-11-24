@@ -1,60 +1,53 @@
 # TeachFlow
 
-TeachFlow is an instructor-only course planning platform. **The current target is a local single-user presentation demo, not a hosted product.** Authentication, owner isolation and deployment are intentionally out of scope; see [decision D1](docs/DECISIONS.md). The repository retains its standalone HTML/CSS/JavaScript prototype and adds a FastAPI modular-monolith backend. It has no student portal and does not depend on an external LMS.
+TeachFlow helps one instructor plan a course, track each group's progress, review a transcript and prepare a follow-up. The presentation app runs on localhost with FastAPI, SQLite and the existing browser interface.
 
-## Current implementation
+## Try the synthetic demonstration
 
-- The backend persists courses, instructor groups, materials, versioned roadmaps, topics, sessions, dependency edges, and group-specific progress with SQLAlchemy 2.x.
-- Alembic provides the initial database migration. SQLite is the local default; PostgreSQL is supported by setting `DATABASE_URL`.
-- TXT, Markdown, and text-based PDF uploads are size-limited, stored under generated filenames, and extracted before they can be used as generation context.
-- Roadmap generation defaults to Groq's OpenAI-compatible Chat Completions endpoint and `openai/gpt-oss-20b`; the provider, model, and API style are configurable. Without credentials, generation responds with a clear `503`; no example or simulated AI response is substituted.
-- Proposed roadmaps are validated and saved as drafts. Editing a draft and explicit approval are separate API actions; approving a newer version supersedes the previous approved roadmap.
-- The browser prototype remains recognizable and is served from the API at `/`. Its local sample course is clearly labelled demonstration data.
-
-The browser prototype loads saved courses, groups, materials, approved roadmaps, and group-specific session-goal progress from the API; progress changes are written back and restored after reload. When a new roadmap version is approved, progress follows sessions with unchanged stable IDs; objective completion is preserved only when that session's goal list is unchanged. Progress for removed sessions remains historical and is excluded from the active-group progress response. Draft recovery still uses browser storage. Authentication and instructor ownership checks, calendar integration, OCR, and the broader workflow are not production-ready. The API currently has no instructor identity boundary: keep it local/trusted and do not expose this service publicly until authentication and per-instructor authorization are implemented.
-
-## Project layout
-
-```text
-frontend/
-  index.html             Existing instructor UI prototype
-backend/
-  app/                   FastAPI application, API, domain, and services
-  migrations/            Alembic schema migrations
-  tests/                 Backend tests
-docs/                    Architecture, data model, development, and status
-requirements.txt         Single dependency list
-pytest.ini               Single test configuration
-.env.example             Shared local configuration template
-```
-
-## Local development
-
-Use Python 3.10 or later. In PowerShell from the repository root:
+From the repository root in Windows PowerShell, with Python installed, run the following commands.
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-Copy-Item .env.example .env
-Set-Location backend
-python -m alembic upgrade head
-python -m uvicorn app.main:app --reload
+python scripts/demo_walkthrough.py --serve
 ```
 
-Open `http://127.0.0.1:8000/` for the prototype, `/docs` for API documentation, `/health` for liveness, and `/health/ready` for database readiness.
+Open http://127.0.0.1:8000. The command creates a temporary database, applies migrations, loads the sample Python course, exercises the full API workflow and leaves the app open. The banner identifies recorded synthetic responses. Ctrl+C closes the demo and releases its temporary data. Use `--empty --serve` to perform the setup yourself.
 
-Run automated checks from the repository root:
+## Run with persistent local data
 
 ```powershell
-python -m pytest
+cd backend
+python -m alembic upgrade head
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Configuration is read from process environment variables and the repository-root `.env` file. See [`.env.example`](.env.example). SQLite data and uploaded documents are stored in `backend/data` when the server is started from `backend`; the directory is ignored by Git. Set `TEACHFLOW_DATA_DIR` to move uploaded material storage. PostgreSQL may be configured with a SQLAlchemy URL such as `postgresql+psycopg://...`; install the appropriate PostgreSQL driver when using it.
+This entry point stores local data under `backend/data`. Without provider credentials, roadmap generation returns 503, review and package editors offer manual drafting, and the Assistant shows locally retrieved references. Provider selection and live quality evaluation require an owner decision.
 
-## Documentation
+## Instructor workflow
 
-- [Architecture and workflow](docs/architecture.md)
-- [Domain model](docs/data-model.md)
-- [Development, configuration, and limitations](docs/development.md)
-- [Implementation status and next steps](docs/implementation-status.md)
+1. Create a course and groups. Enter schedules directly or edit and confirm an ICS/CSV preview.
+2. Upload materials and inspect extraction status and source locations.
+3. Review the proposed sessions, edit topics and typed links, then approve the roadmap.
+4. Switch between groups to update objectives, set target dates and open incomplete prerequisites.
+5. Upload a synthetic TXT/MD transcript from session details. Review evidence and approve the findings.
+6. Edit and approve each follow-up item. Copy approved text when ready.
+7. Ask the Assistant a question about the selected course or group and inspect its references.
+
+## Verification and reference
+
+- [Demo commands and manual browser checklist](docs/DEMO_WALKTHROUGH.md)
+- [Test results, milestone commits and verification limits](docs/TEST_REPORT.md)
+- [Project status](docs/PROJECT_STATUS.md) and [approved local scope](docs/product/MVP_SCOPE.md)
+- [API outline, file formats and configuration](docs/development.md)
+- [Engineering decisions](docs/DECISIONS.md)
+
+On 24 November 2026 the local suite passed 54 backend tests, 20 frontend tests and both Chromium acceptance checks. The automated run used synthetic data and recorded responses. Live AI output quality remains unverified.
+
+From the repository root, run the backend and frontend suites with these commands. Chromium setup and commands are in the walkthrough.
+
+```sh
+python -m pytest -q
+node --test frontend/tests/roadmap-layout.test.cjs frontend/tests/session-graph.test.cjs frontend/tests/workspace.test.cjs
+```
