@@ -14,13 +14,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
+from app.ingestion import CODE_TYPES, document_chunks, calendar_preview
 from app.graph import as_proposal, write_graph
 from app.db import get_db
 from app.models import (
     Course,
     GroupSessionProgress,
     InstructorGroup,
-    Material,
+    Material, MaterialChunk,
     RoadmapVersion,
     TeachingSession,
     Topic,
@@ -58,6 +59,22 @@ ALLOWED_TYPES = {
     ".txt": {"text/plain", "application/octet-stream"},
     ".md": {"text/markdown", "text/plain", "application/octet-stream"},
 }
+for extension in CODE_TYPES:
+    ALLOWED_TYPES[extension] = {"application/octet-stream","text/plain","text/javascript","application/javascript",
+                                "application/json","text/x-python","text/typescript","video/mp2t","text/x-java-source"}
+
+
+@router.post("/api/v1/calendar/preview")
+def preview_calendar(file: UploadFile = File(...)):
+    body = file.file.read(512_001)
+    if len(body) > 512_000:
+        raise HTTPException(413, "Schedule exceeds 512 KB.")
+    try:
+        return calendar_preview(body.decode("utf-8-sig"), Path(file.filename or "").suffix.lower())
+    except (UnicodeError, ValueError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
 MAX_EXTRACTED_CHARS = 20_000
 MAX_CONTEXT_CHARS = 100_000
 MAX_CONTEXT_MATERIALS = 30
@@ -275,7 +292,7 @@ def upload_material(
         destination.unlink(missing_ok=True)
         storage_name = f"rejected-{ident}"
         processing_state = "unsupported"
-        error_message = "Supported formats are PDF, TXT, and Markdown."
+        error_message = "Use a text PDF, TXT, Markdown or source code. Export Office documents to text first."
     elif size == 0:
         destination.unlink(missing_ok=True)
         processing_state = "empty"
@@ -290,10 +307,10 @@ def upload_material(
             extracted, partial = extract_document(destination, extension)
             if not extracted.strip():
                 processing_state = "empty"
-                error_message = "No extractable text was found in the document."
+                error_message = "No extractable text was found. For a scanned PDF, supply a text export."
                 destination.unlink(missing_ok=True)
             else:
-                extracted_name = f"{ident}.txt"
+                extracted_name = f"{ident}.extracted.txt"
                 extracted_path = storage_root / extracted_name
                 extracted_path.write_text(extracted, encoding="utf-8")
                 processing_state = "partial" if partial else "processed"
@@ -322,6 +339,9 @@ def upload_material(
         status=processing_state,
         error_message=error_message,
     )
+    if extracted_name:
+        material.chunks = [MaterialChunk(position=i, locator=loc, text=part)
+                           for i,(loc,part) in enumerate(document_chunks(extracted, extension))]
     db.add(material)
     try:
         db.commit()
@@ -377,6 +397,22 @@ def list_materials(course_id: str, db: Session = Depends(get_db)) -> list[Materi
             .order_by(Material.created_at)
         ).all()
     )
+
+
+def validate_chunk_references(proposal, sources):
+    for session in proposal.sessions:
+        for key in session.supporting_chunk_ids:
+            if key not in sources:
+                raise InvalidRoadmap("A session cites an unavailable material chunk.")
+            if sources[key] not in session.supporting_material_ids:
+                session.supporting_material_ids.append(sources[key])
+        if session.supporting_material_ids and not session.supporting_chunk_ids:
+            for material in session.supporting_material_ids:
+                options = [key for key, parent in sources.items() if parent == material]
+                if len(options) == 1:
+                    session.supporting_chunk_ids.extend(options)
+                else:
+                    raise InvalidRoadmap("Choose a supporting chunk for each cited material.")
 
 
 def _roadmap_response(version: RoadmapVersion) -> RoadmapVersionOut:
@@ -458,26 +494,30 @@ def generate_roadmap(
             .limit(MAX_CONTEXT_MATERIALS + 1)
         ).all()
     )
-    material_context = []
-    material_dir = settings.data_dir / "materials"
+    material_context, chunk_context, context_warnings = [], [], []
     context_chars = 0
     for material in material_records[:MAX_CONTEXT_MATERIALS]:
-        assert material.extracted_name is not None
-        extracted_path = material_dir / material.extracted_name
-        if extracted_path.exists() and context_chars < MAX_CONTEXT_CHARS:
-            text_limit = min(
-                MAX_EXTRACTED_CHARS, MAX_CONTEXT_CHARS - context_chars
-            )
-            with extracted_path.open(encoding="utf-8") as source:
-                text = source.read(text_limit)
-            context_chars += len(text)
-            material_context.append(
-                {
-                    "id": material.id,
-                    "filename": material.filename,
-                    "text": text,
-                }
-            )
+        if not material.chunks:
+            # Older uploads only had a text export. Keep its true offset as provenance.
+            path = settings.data_dir / "materials" / material.extracted_name
+            if path.is_file():
+                material.chunks = [MaterialChunk(position=i, locator=loc, text=part)
+                                   for i,(loc,part) in enumerate(document_chunks(path.read_text(encoding="utf-8"), ".txt"))]
+                db.flush()
+        remaining = min(MAX_EXTRACTED_CHARS, MAX_CONTEXT_CHARS-context_chars)
+        included = []
+        for chunk in material.chunks:
+            text = chunk.text[:remaining]
+            if text:
+                chunk_context.append(dict(id=chunk.id, material_id=material.id, locator=chunk.locator, text=text))
+                included.append(text)
+                context_chars += len(text)
+                remaining -= len(text)
+            if len(text) < len(chunk.text):
+                context_warnings.append(f"{material.filename}: the generation context limit omitted some text.")
+                break
+        if included:
+            material_context.append(dict(id=material.id, filename=material.filename, text="".join(included)))
     groups = list(
         db.scalars(select(InstructorGroup).where(InstructorGroup.course_id == course_id)).all()
     )
@@ -497,6 +537,7 @@ def generate_roadmap(
             for group in groups
         ],
         "materials": material_context,
+        "chunks": chunk_context,
         "instructions": (
             "Ground topics in supplied material. Mark inferred topics. Use material "
             "ids only from the supplied materials. Topic dependencies form a DAG."
@@ -509,6 +550,8 @@ def generate_roadmap(
             try:
                 candidate = anyio.run(generator.generate, context)
                 validate_roadmap(candidate, known_material_ids)
+                validate_chunk_references(candidate, {c["id"]: c["material_id"] for c in chunk_context})
+
             except InvalidRoadmap as exc:
                 if attempt == 1:
                     raise
@@ -524,7 +567,7 @@ def generate_roadmap(
             raise InvalidRoadmap(
                 "The model response could not be validated after one correction attempt."
             )
-        required_warnings = []
+        required_warnings = list(context_warnings)
         if not material_context:
             required_warnings.append(
                 "No extracted teaching materials were available; verify coverage manually."
@@ -541,7 +584,7 @@ def generate_roadmap(
             required_warnings.append(
                 f"Only the {MAX_CONTEXT_MATERIALS} most recently processed materials were included."
             )
-        proposal.warnings = (proposal.warnings + required_warnings)[:30]
+        proposal.warnings = (required_warnings + proposal.warnings)[:30]
     except GeneratorNotConfigured as exc:
         raise HTTPException(503, str(exc)) from exc
     except InvalidRoadmap as exc:
@@ -685,6 +728,8 @@ def edit_roadmap(
     )
     try:
         validate_roadmap(proposal, course_material_ids)
+        validate_chunk_references(proposal, dict(db.execute(select(MaterialChunk.id, MaterialChunk.material_id)
+                                  .where(MaterialChunk.material_id.in_(course_material_ids))).all()))
     except InvalidRoadmap as exc:
         raise HTTPException(422, str(exc)) from exc
     db.query(TopicDependency).filter_by(roadmap_version_id=roadmap.id).delete()

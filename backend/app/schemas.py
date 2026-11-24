@@ -1,6 +1,6 @@
 """Validated API and roadmap-generation contracts."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -25,8 +25,14 @@ class CourseCreate(BaseModel):
         return value
 
 
+Weekday = Literal["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+
+
 class GroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
+    weekday: Weekday | None = None
+    start_time: str | None = Field(default=None, pattern=r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
+    start_date: date | None = None
     schedule_description: str | None = Field(default=None, max_length=500)
     session_duration_minutes: int | None = Field(default=None, ge=1, le=720)
 
@@ -43,6 +49,9 @@ class GroupOut(ORMModel):
     id: str
     course_id: str
     name: str
+    weekday: Weekday | None = None
+    start_time: str | None = Field(default=None, pattern=r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
+    start_date: date | None = None
     schedule_description: str | None
     session_duration_minutes: int | None
 
@@ -56,7 +65,13 @@ class CourseOut(ORMModel):
     groups: list[GroupOut] = Field(default_factory=list)
 
 
+class ChunkRef(ORMModel):
+    id: str
+    locator: str
+
+
 class MaterialOut(ORMModel):
+    chunks: list[ChunkRef] = Field(default_factory=list)
     id: str
     course_id: str
     filename: str
@@ -95,6 +110,7 @@ class SessionProposal(BaseModel):
     description: str = Field(min_length=1, max_length=4000)
     duration_minutes: int = Field(ge=1, le=720)
     learning_objectives: list[str] = Field(default_factory=list, max_length=20)
+    supporting_chunk_ids: list[str] = Field(default_factory=list, max_length=50)
     supporting_material_ids: list[str] = Field(default_factory=list, max_length=50)
 
 
@@ -138,6 +154,7 @@ class SessionOut(ORMModel):
     description: str
     learning_objectives: list[str]
     duration_minutes: int
+    supporting_chunk_ids: list[str] = Field(default_factory=list, max_length=50)
     supporting_material_ids: list[str]
 
 

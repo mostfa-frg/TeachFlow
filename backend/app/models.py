@@ -1,6 +1,6 @@
 """Relational domain model; progress belongs to a group, plans belong to a course."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -72,6 +72,9 @@ class InstructorGroup(TimestampMixin, Base):
         ForeignKey("courses.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    weekday: Mapped[str | None] = mapped_column(String(12))
+    start_time: Mapped[str | None] = mapped_column(String(5))
+    start_date: Mapped[date | None]
     schedule_description: Mapped[str | None] = mapped_column(String(500))
     session_duration_minutes: Mapped[int | None] = mapped_column(Integer)
     course: Mapped[Course] = relationship(back_populates="groups")
@@ -99,10 +102,21 @@ class Material(TimestampMixin, Base):
     media_type: Mapped[str | None] = mapped_column(String(120))
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_name: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
+    chunks: Mapped[list["MaterialChunk"]] = relationship(cascade="all, delete-orphan", order_by="MaterialChunk.position")
     extracted_name: Mapped[str | None] = mapped_column(String(80), unique=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     error_message: Mapped[str | None] = mapped_column(String(500))
     course: Mapped[Course] = relationship(back_populates="materials")
+
+
+class MaterialChunk(Base):
+    __tablename__ = "material_chunks"
+    __table_args__ = (UniqueConstraint("material_id", "position"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    material_id: Mapped[str] = mapped_column(ForeignKey("materials.id", ondelete="CASCADE"))
+    position: Mapped[int]
+    locator: Mapped[str] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text)
 
 
 class RoadmapVersion(TimestampMixin, Base):
@@ -189,6 +203,7 @@ class TeachingSession(TimestampMixin, Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     learning_objectives: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list, server_default=text("'[]'"))
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    supporting_chunk_ids: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
     supporting_material_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     roadmap_version: Mapped[RoadmapVersion] = relationship(back_populates="sessions")
     member_topics: Mapped[list[Topic]] = relationship(secondary="session_topics", viewonly=True, order_by="Topic.sort_order")

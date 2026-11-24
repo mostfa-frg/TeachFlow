@@ -10,3 +10,9 @@ async function apiRequest(path, options = {}) {
   }
   return data;
 }
+
+function previewSchedule(file) {
+  const data = new FormData();
+  data.append('file', file);
+  return apiRequest('/calendar/preview', {method:'POST', body:data});
+}
