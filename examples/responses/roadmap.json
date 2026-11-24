@@ -1,0 +1,92 @@
+{
+  "topics": [
+    {
+      "id": "basics",
+      "title": "Python basics",
+      "description": "Explain functions and loops",
+      "learning_objectives": [
+        "Explain functions and loops"
+      ]
+    },
+    {
+      "id": "lab",
+      "title": "Lab",
+      "description": "Build a small program",
+      "learning_objectives": [
+        "Build a small program"
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "id": "functions",
+      "topic_id": "basics",
+      "topic_ids": [
+        "basics"
+      ],
+      "sequence_index": 1,
+      "title": "Functions",
+      "description": "Explain function arguments and return values",
+      "learning_objectives": [
+        "Explain function arguments and return values"
+      ],
+      "duration_minutes": 60,
+      "source_filename": "functions.md"
+    },
+    {
+      "id": "loops",
+      "topic_id": "basics",
+      "topic_ids": [
+        "basics",
+        "lab"
+      ],
+      "sequence_index": 2,
+      "title": "Loops",
+      "description": "Trace a loop",
+      "learning_objectives": [
+        "Trace a loop"
+      ],
+      "duration_minutes": 60,
+      "source_filename": "loops.txt"
+    },
+    {
+      "id": "practice",
+      "topic_id": "lab",
+      "topic_ids": [
+        "lab"
+      ],
+      "sequence_index": 1,
+      "title": "Practice",
+      "description": "Combine a loop and a function",
+      "learning_objectives": [
+        "Combine a loop and a function"
+      ],
+      "duration_minutes": 60,
+      "source_filename": "practice.md"
+    }
+  ],
+  "session_edges": [
+    {
+      "from_session_id": "functions",
+      "to_session_id": "loops",
+      "edge_type": "prerequisite",
+      "note": null
+    },
+    {
+      "from_session_id": "functions",
+      "to_session_id": "practice",
+      "edge_type": "depends_on",
+      "note": null
+    },
+    {
+      "from_session_id": "loops",
+      "to_session_id": "practice",
+      "edge_type": "reinforces",
+      "note": null
+    }
+  ],
+  "dependencies": [],
+  "warnings": [
+    "Recorded synthetic fixture. This demo does not call a live AI provider."
+  ]
+}

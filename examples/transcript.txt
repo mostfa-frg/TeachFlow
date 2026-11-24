@@ -1,0 +1,2 @@
+A function accepts arguments and returns a value.
+Instructor: Our example doubles the argument and returns the result.

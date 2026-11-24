@@ -1,5 +1,11 @@
 async function apiRequest(path, options = {}) {
   const response = await fetch('/api/v1' + path, options);
+  if (response.headers.get('X-TeachFlow-Demo')==='recorded' && !document.getElementById('fixture-mode')) {
+    const banner=document.createElement('p');
+    banner.id='fixture-mode';
+    banner.textContent='Synthetic demonstration · recorded provider responses';
+    document.body.prepend(banner);
+  }
   if (response.status === 204) return null;
   const data = await response.json().catch(() => null);
   if (!response.ok) {

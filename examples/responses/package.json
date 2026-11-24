@@ -1,0 +1,6 @@
+{
+  "recap": "The example doubled the argument and returned the result.",
+  "homework": "Write a function that doubles an integer and test it with zero.",
+  "summary": "We covered function arguments and return values.",
+  "group_message": "Please bring your double function and one test case to the next session."
+}

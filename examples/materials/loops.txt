@@ -1,0 +1,2 @@
+A loop repeats a block of code for each item in a sequence.
+Trace three iterations and record the output.

@@ -1,0 +1,9 @@
+{
+  "sufficient": true,
+  "citations": [
+    {
+      "ref": "loops.txt",
+      "quote": "A loop repeats a block of code for each item in a sequence."
+    }
+  ]
+}

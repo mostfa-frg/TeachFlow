@@ -1,0 +1,16 @@
+{
+  "findings": [
+    {
+      "objective_index": 0,
+      "status": "covered",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "start": 0,
+          "end": 49,
+          "snippet": "A function accepts arguments and returns a value."
+        }
+      ]
+    }
+  ]
+}
