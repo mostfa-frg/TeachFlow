@@ -1,4 +1,5 @@
 """Isolated synthetic generator for the browser regression."""
+
 from app.api.v1.router import get_roadmap_generator
 from app.main import app
 from test_api import StubGenerator

@@ -43,3 +43,16 @@ function proposalForSave(draft) {
 function hardLink(edge) {
   return !edge[2] || ['prerequisite','depends_on'].includes(edge[2]);
 }
+
+function linkDescription(sessions,edge,endpoint) {
+  const title=sessions.find(s=>s.id===edge[endpoint])?.title || edge[endpoint];
+  return title+' ('+(edge[2]||'prerequisite')+')'+(edge[3]?' · '+edge[3]:'');
+}
+
+function citationPicker(materials, session, escape) {
+  const choices=materials.flatMap(m=>(m.chunks||[]).map(chunk=>
+    `<option value="${escape(chunk.id)}" data-material="${escape(m.apiId||m.id)}" ${(session.chunkIds||[]).includes(chunk.id)?'selected':''}>
+    ${escape(m.name||m.filename)} · ${escape(chunk.locator)}</option>`));
+  if (!choices.length) return '';
+  return `<label>Supporting passages<select id="session-citations" multiple>${choices.join('')}</select></label>`;
+}

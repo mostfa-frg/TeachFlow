@@ -1,10 +1,12 @@
 """Local previews and source locations for instructor-supplied files."""
+
 import csv
 import io
 import re
-from datetime import date, datetime, time
+from datetime import datetime, timedelta
 
 from pydantic import ValidationError
+
 from app.schemas import GroupCreate
 
 CODE_TYPES = {".py", ".js", ".ts", ".java", ".json"}
@@ -16,15 +18,15 @@ def document_chunks(text, extension, size=1600):
     if extension == ".pdf":
         for page, body in enumerate(text.split("\f"), 1):
             for start in range(0, len(body), size):
-                part = body[start:start + size]
+                part = body[start : start + size]
                 if part.strip():
-                    yield f"Page {page}, chars {start}–{start+len(part)}", part
+                    yield f"Page {page}, chars {start}–{start + len(part)}", part
     elif extension == ".md":
         heading, buffer, first = "Document", "", 1
         for line_number, line in enumerate(text.splitlines(keepends=True), 1):
             if line.startswith("#") or len(buffer) + len(line) > size:
                 if buffer.strip():
-                    yield f"{heading}, lines {first}–{line_number-1}", buffer
+                    yield f"{heading}, lines {first}–{line_number - 1}", buffer
                 buffer, first = "", line_number
             if line.startswith("#"):
                 heading = line.strip("# \r\n")[:120] or "Document"
@@ -36,9 +38,9 @@ def document_chunks(text, extension, size=1600):
             yield f"{heading}, lines {first}–{line_number}", buffer
     else:
         for start in range(0, len(text), size):
-            part = text[start:start + size]
+            part = text[start : start + size]
             if part.strip():
-                yield f"Chars {start}–{start+len(part)}", part
+                yield f"Chars {start}–{start + len(part)}", part
 
 
 def csv_rows(body):
@@ -48,9 +50,13 @@ def csv_rows(body):
         raise ValueError("CSV header must include " + ", ".join(sorted(required)))
     for line, row in enumerate(reader, 2):
         try:
-            group = GroupCreate(name=row["name"], weekday=row["weekday"].strip().title(),
-                                start_time=row["start_time"], start_date=row["start_date"],
-                                session_duration_minutes=row["duration_minutes"])
+            group = GroupCreate(
+                name=row["name"],
+                weekday=row["weekday"].strip().title(),
+                start_time=row["start_time"],
+                start_date=row["start_date"],
+                session_duration_minutes=row["duration_minutes"],
+            )
             yield line, group, None
         except (ValidationError, ValueError, AttributeError) as exc:
             yield line, None, str(exc).split(" [type=")[0][:300]
@@ -69,19 +75,34 @@ def parse_event(fields):
     name = fields.get("SUMMARY", "").replace("\\,", ",")
     start, end = (calendar_stamp(fields.get(k, "")) for k in ("DTSTART", "DTEND"))
     duration = int((end - start).total_seconds() / 60)
-    rule = dict(item.split("=", 1) for item in fields["RRULE"].split(";")) if fields.get("RRULE") else {}
-    if rule and (rule.get("FREQ") != "WEEKLY" or rule.get("INTERVAL","1") != "1" or set(rule)-{"FREQ","BYDAY","INTERVAL"}):
-        raise ValueError("Only unbounded weekly recurrences with optional BYDAY are supported. Enter other schedules manually.")
+    rule = (
+        dict(item.split("=", 1) for item in fields["RRULE"].split(";"))
+        if fields.get("RRULE")
+        else {}
+    )
+    if rule and (
+        rule.get("FREQ") != "WEEKLY"
+        or rule.get("INTERVAL", "1") != "1"
+        or set(rule) - {"FREQ", "BYDAY", "INTERVAL"}
+    ):
+        raise ValueError(
+            "Only unbounded weekly recurrences with optional BYDAY are supported. Enter other schedules manually."
+        )
     weekdays = rule.get("BYDAY", DAY_CODES[start.weekday()]).split(",")
     for day in weekdays:
         if day not in DAY_CODES:
             raise ValueError("Invalid weekly BYDAY.")
-        from datetime import timedelta
-        begins = start.date() + timedelta(days=(DAY_CODES.index(day) - start.weekday()) % 7)
-        yield GroupCreate(name=name if len(weekdays)==1 else f"{name} · {day}", weekday=DAYS[DAY_CODES.index(day)],
-                          start_time=start.time().strftime("%H:%M"), start_date=begins,
-                          session_duration_minutes=duration,
-                          schedule_description="Weekly" if rule else "One-time event")
+        begins = start.date() + timedelta(
+            days=(DAY_CODES.index(day) - start.weekday()) % 7
+        )
+        yield GroupCreate(
+            name=name if len(weekdays) == 1 else f"{name} · {day}",
+            weekday=DAYS[DAY_CODES.index(day)],
+            start_time=start.time().strftime("%H:%M"),
+            start_date=begins,
+            session_duration_minutes=duration,
+            schedule_description="Weekly" if rule else "One-time event",
+        )
 
 
 def calendar_preview(body, extension):
@@ -113,3 +134,46 @@ def calendar_preview(body, extension):
     else:
         raise ValueError("Choose an ICS or CSV file.")
     return dict(groups=groups, errors=errors)
+
+
+def index_legacy_exports(db, course_id, material_dir):
+    """Recover legacy text exports once, retaining their original character offsets."""
+    from pathlib import Path
+
+    from sqlalchemy import select
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models import Material, MaterialChunk
+
+    rows = db.scalars(
+        select(Material).where(
+            Material.course_id == course_id,
+            Material.extracted_name.is_not(None),
+            ~Material.chunks.any(),
+        )
+    )
+    changed = False
+    for material in rows:
+        name = material.extracted_name
+        if Path(name).name != name:
+            continue
+        path = material_dir / name
+        if not path.is_file():
+            continue
+        parts = document_chunks(path.read_text(encoding="utf-8"), ".txt")
+        try:
+            with db.begin_nested():
+                db.add_all(
+                    [
+                        MaterialChunk(
+                            material_id=material.id, position=i, locator=loc, text=part
+                        )
+                        for i, (loc, part) in enumerate(parts)
+                    ]
+                )
+            changed = True
+        except IntegrityError:
+            # Another request indexed this file first.
+            continue
+    if changed:
+        db.commit()

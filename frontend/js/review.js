@@ -50,7 +50,7 @@ function mountReview(root, route, escape, changed) {
         const evidence=field.querySelector('[name=ranges]').value.split(/\n/).filter(s=>s.trim()).map(range=>{
           if (!/^\d+:\d+$/.test(range.trim())) throw new Error('Enter each evidence range as start:end.');
           const [start,end] = range.trim().split(':').map(Number);
-          return {start,end,snippet:review.transcript.slice(start,end)};
+          return {start,end,snippet:Array.from(review.transcript).slice(start,end).join('')};
         });
         return {objective_index:Number(field.dataset.index),status:field.querySelector('select').value,
           confidence:Number(field.querySelector('[name=confidence]').value),evidence};

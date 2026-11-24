@@ -8,9 +8,20 @@ depends_on = None
 
 
 def upgrade():
-    op.create_table("benchmarks", sa.Column("group_id", sa.String(36), sa.ForeignKey("instructor_groups.id", ondelete="CASCADE"), primary_key=True),
-                    sa.Column("stable_id", sa.String(80), primary_key=True), sa.Column("target_date", sa.Date(), nullable=False))
+    op.create_table(
+        "benchmarks",
+        sa.Column(
+            "group_id",
+            sa.String(36),
+            sa.ForeignKey("instructor_groups.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
+        sa.Column("stable_id", sa.String(80), primary_key=True),
+        sa.Column("target_date", sa.Date(), nullable=False),
+    )
 
 
 def downgrade():
-    raise RuntimeError("Removing benchmark data requires a separate local data decision.")
+    raise RuntimeError(
+        "Removing benchmark data requires a separate local data decision."
+    )

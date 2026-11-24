@@ -110,8 +110,8 @@ class SessionProposal(BaseModel):
     description: str = Field(min_length=1, max_length=4000)
     duration_minutes: int = Field(ge=1, le=720)
     learning_objectives: list[str] = Field(default_factory=list, max_length=20)
-    supporting_chunk_ids: list[str] = Field(default_factory=list, max_length=50)
-    supporting_material_ids: list[str] = Field(default_factory=list, max_length=50)
+    supporting_chunk_ids: list[StableId] = Field(default_factory=list, max_length=50)
+    supporting_material_ids: list[StableId] = Field(default_factory=list, max_length=50)
 
 
 class DependencyProposal(BaseModel):

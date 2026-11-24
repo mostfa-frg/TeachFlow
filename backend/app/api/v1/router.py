@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
-from app.ingestion import CODE_TYPES, document_chunks, calendar_preview
+from app.ingestion import CODE_TYPES, document_chunks, calendar_preview, index_legacy_exports
 from app.graph import as_proposal, write_graph
 from app.db import get_db
 from app.models import (
@@ -390,6 +390,7 @@ def delete_material(
 def list_materials(course_id: str, db: Session = Depends(get_db)) -> list[Material]:
     if not db.get(Course, course_id):
         raise HTTPException(404, "Course not found.")
+    index_legacy_exports(db,course_id,settings.data_dir / "materials")
     return list(
         db.scalars(
             select(Material)
@@ -483,6 +484,7 @@ def generate_roadmap(
         )
         if existing:
             return _roadmap_response(_get_roadmap(db, existing.id))
+    index_legacy_exports(db,course_id,settings.data_dir / "materials")
     material_records = list(
         db.scalars(
             select(Material).where(
@@ -497,13 +499,6 @@ def generate_roadmap(
     material_context, chunk_context, context_warnings = [], [], []
     context_chars = 0
     for material in material_records[:MAX_CONTEXT_MATERIALS]:
-        if not material.chunks:
-            # Older uploads only had a text export. Keep its true offset as provenance.
-            path = settings.data_dir / "materials" / material.extracted_name
-            if path.is_file():
-                material.chunks = [MaterialChunk(position=i, locator=loc, text=part)
-                                   for i,(loc,part) in enumerate(document_chunks(path.read_text(encoding="utf-8"), ".txt"))]
-                db.flush()
         remaining = min(MAX_EXTRACTED_CHARS, MAX_CONTEXT_CHARS-context_chars)
         included = []
         for chunk in material.chunks:
@@ -532,6 +527,8 @@ def generate_roadmap(
             {
                 "name": group.name,
                 "schedule_description": group.schedule_description,
+                "weekday": group.weekday, "start_time": group.start_time,
+                "start_date": group.start_date.isoformat() if group.start_date else None,
                 "session_duration_minutes": group.session_duration_minutes,
             }
             for group in groups
@@ -568,6 +565,10 @@ def generate_roadmap(
                 "The model response could not be validated after one correction attempt."
             )
         required_warnings = list(context_warnings)
+        if material_context:
+            ungrounded = [s.title for s in proposal.sessions if not s.supporting_chunk_ids]
+            if ungrounded:
+                required_warnings.append("No material citation for these proposed sessions: " + ", ".join(ungrounded) + ". Review them as inferences.")
         if not material_context:
             required_warnings.append(
                 "No extracted teaching materials were available; verify coverage manually."
@@ -715,6 +716,8 @@ def get_roadmap(roadmap_id: str, db: Session = Depends(get_db)) -> RoadmapVersio
 def edit_roadmap(
     roadmap_id: str, proposal: RoadmapProposal, db: Session = Depends(get_db)
 ) -> RoadmapVersionOut:
+    if db.bind.dialect.name == "sqlite":
+        db.execute(text("BEGIN IMMEDIATE"))
     roadmap = _get_roadmap(db, roadmap_id)
     if roadmap.state != "draft":
         raise HTTPException(409, "Only draft roadmaps can be edited.")
@@ -755,6 +758,8 @@ def edit_roadmap(
     tags=["roadmaps"],
 )
 def approve_roadmap(roadmap_id: str, db: Session = Depends(get_db)) -> RoadmapVersionOut:
+    if db.bind.dialect.name == "sqlite":
+        db.execute(text("BEGIN IMMEDIATE"))
     roadmap = _get_roadmap(db, roadmap_id)
     if roadmap.state != "draft":
         raise HTTPException(409, "Only draft roadmaps can be approved.")
@@ -819,6 +824,8 @@ def update_group_progress(
     request: ProgressUpdate,
     db: Session = Depends(get_db),
 ) -> GroupSessionProgress:
+    if db.bind.dialect.name == "sqlite":
+        db.execute(text("BEGIN IMMEDIATE"))
     group = db.get(InstructorGroup, group_id)
     session = db.get(TeachingSession, session_id)
     roadmap = db.get(RoadmapVersion, session.roadmap_version_id) if session else None

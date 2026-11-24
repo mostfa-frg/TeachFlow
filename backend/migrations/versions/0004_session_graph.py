@@ -1,4 +1,5 @@
 """Preserve the recoverable session graph and its order."""
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -9,17 +10,34 @@ depends_on = None
 
 
 def ref(name, target):
-    return sa.Column(name, sa.String(36), sa.ForeignKey(target + ".id", ondelete="CASCADE"), primary_key=True)
+    return sa.Column(
+        name,
+        sa.String(36),
+        sa.ForeignKey(target + ".id", ondelete="CASCADE"),
+        primary_key=True,
+    )
 
 
 def upgrade():
     for table in ("topics", "teaching_sessions"):
-        op.add_column(table, sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"))
-    op.create_table("session_topics", ref("session_id", "teaching_sessions"), ref("topic_id", "topics"))
-    op.create_table("session_edges", ref("roadmap_version_id", "roadmap_versions"),
-                    ref("from_session_id", "teaching_sessions"), ref("to_session_id", "teaching_sessions"),
-                    sa.Column("edge_type", sa.String(32), primary_key=True), sa.Column("note", sa.String(500)),
-                    sa.CheckConstraint("from_session_id != to_session_id", name="ck_edge_not_self"))
+        op.add_column(
+            table,
+            sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
+        )
+    op.create_table(
+        "session_topics",
+        ref("session_id", "teaching_sessions"),
+        ref("topic_id", "topics"),
+    )
+    op.create_table(
+        "session_edges",
+        ref("roadmap_version_id", "roadmap_versions"),
+        ref("from_session_id", "teaching_sessions"),
+        ref("to_session_id", "teaching_sessions"),
+        sa.Column("edge_type", sa.String(32), primary_key=True),
+        sa.Column("note", sa.String(500)),
+        sa.CheckConstraint("from_session_id != to_session_id", name="ck_edge_not_self"),
+    )
     op.execute("""WITH ranked AS (SELECT id, row_number() OVER
                (PARTITION BY roadmap_version_id ORDER BY created_at,id)-1 AS n FROM topics)
                UPDATE topics SET sort_order=(SELECT n FROM ranked WHERE ranked.id=topics.id)""")
@@ -40,4 +58,6 @@ def upgrade():
 
 
 def downgrade():
-    raise RuntimeError("Removing stored session relationships requires explicit owner approval.")
+    raise RuntimeError(
+        "Removing stored session relationships requires explicit owner approval."
+    )
