@@ -71,3 +71,25 @@ def test_rejected_edits_are_atomic(client, monkeypatch, case):
 def test_foreign_keys_enabled():
     with engine.connect() as connection:
         assert connection.scalar(text("PRAGMA foreign_keys")) == 1
+
+
+def test_generation_race_returns_winner_or_retryable_conflict(client, monkeypatch):
+    course, _, version = setup_graph(client, monkeypatch)
+    from app.graph import write_graph
+    from app.models import RoadmapVersion
+    from sqlalchemy.exc import IntegrityError
+
+    def losing_write(db, roadmap, proposal):
+        key = roadmap.idempotency_key
+        db.rollback()
+        if key == "shared":
+            db.get(RoadmapVersion, version).idempotency_key = key
+            db.commit()
+        raise IntegrityError("concurrent insert", {}, Exception("unique key"))
+
+    monkeypatch.setattr(router, "write_graph", losing_write)
+    url = f"/api/v1/courses/{course}/roadmaps/generate"
+    assert client.post(url, headers={"Idempotency-Key":"shared"}).json()["id"] == version
+    assert client.post(url, headers={"Idempotency-Key":"other"}).status_code == 409
+    monkeypatch.setattr(router, "write_graph", write_graph)
+    assert client.post(url, headers={"Idempotency-Key":"other"}).json()["id"] != version

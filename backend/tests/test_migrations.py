@@ -53,3 +53,29 @@ def test_legacy_session_sequence_migration_preserves_and_orders_sessions(monkeyp
         assert index["unique"]
 
     engine.dispose()
+
+
+def test_graph_backfill_preserves_legacy_edges_and_order(monkeypatch):
+    path = Path(__file__).parents[1] / "migrations/versions/0004_session_graph.py"
+    spec = importlib.util.spec_from_file_location("graph_migration", path)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    engine = sa.create_engine("sqlite://")
+    with engine.begin() as conn:
+        for sql in [
+            "CREATE TABLE roadmap_versions(id TEXT PRIMARY KEY)",
+            "CREATE TABLE topics(id TEXT PRIMARY KEY, roadmap_version_id TEXT, created_at TEXT)",
+            "CREATE TABLE teaching_sessions(id TEXT PRIMARY KEY, roadmap_version_id TEXT, topic_id TEXT, sequence_index INTEGER)",
+            "CREATE TABLE topic_dependencies(roadmap_version_id TEXT, prerequisite_topic_id TEXT, dependent_topic_id TEXT)",
+            "INSERT INTO roadmap_versions VALUES('v')",
+            "INSERT INTO topics VALUES('t','v','1'),('u','v','2')",
+            "INSERT INTO teaching_sessions VALUES('a','v','t',1),('c','v','u',1),('b','v','t',2)",
+            "INSERT INTO topic_dependencies VALUES('v','t','u')",
+        ]:
+            conn.exec_driver_sql(sql)
+        monkeypatch.setattr(migration, "op", Operations(MigrationContext.configure(conn)))
+        migration.upgrade()
+        assert conn.exec_driver_sql("SELECT from_session_id,to_session_id FROM session_edges ORDER BY 1").all() == [("a","b"),("b","c")]
+        assert conn.exec_driver_sql("SELECT count(*) FROM session_topics").scalar() == 3
+        assert conn.exec_driver_sql("SELECT count(*) FROM topic_dependencies").scalar() == 1
+        assert conn.exec_driver_sql("SELECT id FROM teaching_sessions ORDER BY sort_order").scalars().all() == ["a","b","c"]

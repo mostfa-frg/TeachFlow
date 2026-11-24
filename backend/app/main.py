@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.api.v1.router import router
@@ -65,4 +66,5 @@ async def teachflow_logo() -> FileResponse:
     )
 
 
+app.mount("/js", StaticFiles(directory=Path(__file__).resolve().parents[2] / "frontend/js"), name="js")
 app.include_router(router)
