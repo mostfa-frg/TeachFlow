@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
 from app.ingestion import CODE_TYPES, document_chunks, calendar_preview, index_legacy_exports
-from app.graph import as_proposal, write_graph
+from app.graph import as_proposal, write_graph, preserve_legacy_fields
 from app.db import get_db
 from app.models import (
     ApprovalEvent, Course,
@@ -730,6 +730,7 @@ def edit_roadmap(
         ).all()
     )
     try:
+        preserve_legacy_fields(proposal,as_proposal(_roadmap_response(roadmap)))
         validate_roadmap(proposal, course_material_ids)
         validate_chunk_references(proposal, dict(db.execute(select(MaterialChunk.id, MaterialChunk.material_id)
                                   .where(MaterialChunk.material_id.in_(course_material_ids))).all()))
@@ -912,5 +913,8 @@ def diff_versions(roadmap_id: str, other_id: str, db: Session = Depends(get_db))
                     removed=[left[k] for k in sorted(left.keys()-right.keys())],
                     changed=[dict(before=left[k], after=right[k]) for k in sorted(right.keys() & left.keys()) if left[k] != right[k]])
 
-    return dict(sessions=changes(a.sessions, b.sessions, lambda s: s.id),
+    def ordered_sessions(plan):
+        return [dict(session.model_dump(), sort_order=position) for position, session in enumerate(plan.sessions)]
+
+    return dict(sessions=changes(ordered_sessions(a), ordered_sessions(b), lambda s: s["id"]),
                 links=changes(a.session_edges, b.session_edges, lambda e: (e.from_session_id, e.to_session_id, e.edge_type)))

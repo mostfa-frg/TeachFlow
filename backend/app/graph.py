@@ -152,3 +152,51 @@ def as_proposal(version):
         session_edges=version.session_edges,
         warnings=version.warnings,
     )
+
+
+def preserve_legacy_fields(proposal, previous):
+    """An older editor only sends primary topics and topic-level dependencies."""
+    old_sessions = {s.id: s for s in previous.sessions}
+    valid_topics = {t.id for t in proposal.topics}
+    for s in proposal.sessions:
+        old = old_sessions.get(s.id)
+        if old and "topic_ids" not in s.model_fields_set:
+            s.topic_ids = list(
+                dict.fromkeys(
+                    [
+                        s.topic_id,
+                        *(
+                            t
+                            for t in old.topic_ids
+                            if t in valid_topics and t != old.topic_id
+                        ),
+                    ]
+                )
+            )
+        if (
+            old
+            and "supporting_chunk_ids" not in s.model_fields_set
+            and s.supporting_material_ids == old.supporting_material_ids
+        ):
+            s.supporting_chunk_ids = list(old.supporting_chunk_ids)
+    if proposal.session_edges is not None:
+        return
+
+    def inferred(plan):
+        return {
+            (e.from_session_id, e.to_session_id, e.edge_type): e
+            for e in session_edges(plan.model_copy(update={"session_edges": None}))
+        }
+
+    before, after = inferred(previous), inferred(proposal)
+    remaining = {s.id for s in proposal.sessions}
+    preserved = {
+        (e.from_session_id, e.to_session_id, e.edge_type): e
+        for e in previous.session_edges
+        if e.from_session_id in remaining and e.to_session_id in remaining
+    }
+    for removed in before.keys() - after.keys():
+        preserved.pop(removed, None)
+    for added in after.keys() - before.keys():
+        preserved.setdefault(added, after[added])
+    proposal.session_edges = list(preserved.values())

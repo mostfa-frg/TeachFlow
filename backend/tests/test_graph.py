@@ -177,3 +177,29 @@ def test_overlapping_generations_share_one_key(tmp_path, monkeypatch):
             assert len(api.get(root).json()) == 1
     finally:
         db_engine.dispose()
+
+
+def test_legacy_editor_keeps_typed_links_and_secondary_membership(client, monkeypatch):
+    _, data, rid = setup_graph(client, monkeypatch)
+    original = data.pop("session_edges")
+    data["sessions"][0].pop("topic_ids")
+    data["sessions"][1]["title"] = "Retitled by older editor"
+    result = client.put("/api/v1/roadmaps/" + rid, json=data).json()
+    assert sorted(result["session_edges"], key=str) == sorted(original, key=str)
+    assert result["sessions"][0]["topic_ids"] == ["foundations", "practice"]
+
+
+def test_version_diff_includes_explicit_order(client, monkeypatch):
+    course, data, rid = setup_graph(client, monkeypatch)
+    client.post("/api/v1/roadmaps/" + rid + "/approve").raise_for_status()
+    copy = client.post(f"/api/v1/courses/{course}/roadmaps/draft-from-approved").json()[
+        "id"
+    ]
+    data["sessions"].reverse()
+    client.put("/api/v1/roadmaps/" + copy, json=data).raise_for_status()
+    changes = client.get(f"/api/v1/roadmaps/{rid}/diff/{copy}").json()["sessions"][
+        "changed"
+    ]
+    assert len(changes) == 2 and all(
+        item["before"]["sort_order"] != item["after"]["sort_order"] for item in changes
+    )
