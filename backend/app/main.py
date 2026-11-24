@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.api.v1.router import router
+from app.workspace import router as workspace_router
 from app.core.logging import configure_logging
 
 configure_logging()
@@ -68,3 +69,5 @@ async def teachflow_logo() -> FileResponse:
 
 app.mount("/js", StaticFiles(directory=Path(__file__).resolve().parents[2] / "frontend/js"), name="js")
 app.include_router(router)
+
+app.include_router(workspace_router)

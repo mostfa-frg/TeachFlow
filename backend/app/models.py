@@ -283,3 +283,10 @@ class GroupSessionProgress(TimestampMixin, Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     group: Mapped[InstructorGroup] = relationship(back_populates="progress")
     session: Mapped[TeachingSession] = relationship(back_populates="progress")
+
+
+class Benchmark(Base):
+    __tablename__ = "benchmarks"
+    group_id: Mapped[str] = mapped_column(ForeignKey("instructor_groups.id", ondelete="CASCADE"), primary_key=True)
+    stable_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    target_date: Mapped[date]

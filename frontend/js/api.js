@@ -16,3 +16,9 @@ function previewSchedule(file) {
   data.append('file', file);
   return apiRequest('/calendar/preview', {method:'POST', body:data});
 }
+
+function saveTarget(group, session, date) {
+  return apiRequest('/groups/'+group+'/sessions/'+session+'/benchmark', {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({target_date:date || null})
+  });
+}
