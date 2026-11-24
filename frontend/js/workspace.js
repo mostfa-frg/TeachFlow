@@ -27,3 +27,10 @@ function workspaceView(screen, course, group, escape) {
     ${screen==='roadmap-progress'?remindersView(facts,escape):''}<div class="groups">${rows.join('')||'<p>No records to show.</p>'}</div>
     ${screen==='approvals'?`<h2>Approval history</h2><ul>${(course?.history||[]).map(e=>`<li>${escape(e.timestamp)} · ${escape(e.item)} · ${escape(e.state)}</li>`).join('')||'<li>No changes yet.</li>'}</ul>`:''}</section>`;
 }
+
+function showFixtureBanner() {
+  const banner = document.createElement('p');
+  banner.id = 'fixture-mode';
+  banner.textContent = 'Synthetic demonstration · recorded provider responses';
+  document.body.prepend(banner);
+}

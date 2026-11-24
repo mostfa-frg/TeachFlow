@@ -1,11 +1,11 @@
 async function hydrateApiCourse(raw){
-  const groups=(raw.groups||await apiRequest(`/courses/${raw.id}/groups`)).map(g=>({id:g.id,apiGroupId:g.id,courseId:raw.id,name:g.name,schedule:g.schedule_description||'',weekday:g.weekday,startTime:g.start_time,startDate:g.start_date,duration:g.session_duration_minutes||'',status:'active'}));
+  const groups=(raw.groups||await groupApi.list(raw.id)).map(g=>({id:g.id,apiGroupId:g.id,courseId:raw.id,name:g.name,schedule:g.schedule_description||'',weekday:g.weekday,startTime:g.start_time,startDate:g.start_date,duration:g.session_duration_minutes||'',status:'active'}));
   const [materials,roadmap,history,approvals,groupFacts]=await Promise.all([
-    apiRequest(`/courses/${raw.id}/materials`),
-    apiRequest(`/courses/${raw.id}/roadmaps/approved`).catch(error=>{if(error.status===404)return null;throw error}),
-    apiRequest(`/courses/${raw.id}/history`), apiRequest(`/courses/${raw.id}/approvals`),
+    courseApi.materials(raw.id),
+    roadmapApi.approved(raw.id).catch(error=>{if(error.status===404)return null;throw error}),
+    courseApi.history(raw.id), courseApi.approvals(raw.id),
     Promise.all(groups.map(async g=>{
-      const [overview,progress]=await Promise.all([apiRequest(`/groups/${g.id}/overview`),apiRequest(`/groups/${g.id}/progress`)]);
+      const [overview,progress]=await Promise.all([groupApi.overview(g.id),groupApi.savedProgress(g.id)]);
       return {id:g.id,overview,progress};
     }))
   ]);
@@ -26,4 +26,28 @@ async function hydrateApiCourse(raw){
     }
   }
   return{history,approvals,pendingCount:approvals.length,overview,id:raw.id,apiCourseId:raw.id,name:raw.name,description:raw.description||'',learnerLevel:raw.learner_level||'',learningGoals:(raw.learning_goals||[]).join('\n'),status:roadmap?'active':'setup',groups,materials:materials.map(m=>({apiId:m.id,id:m.id,courseId:raw.id,filename:m.filename,name:m.filename,mimeType:m.media_type,sizeBytes:m.size_bytes,status:m.status,chunks:m.chunks||[],errorMessage:m.error_message})),topics,edges,progress,goalProgress,version:roadmap?.version_number||null,apiRoadmapId:roadmap?.id||null,attention:null,localOnly:false};
+}
+
+function coursePayload(draft) {
+  return {
+    name: draft.name,
+    description: draft.description || null,
+    learner_level: draft.learnerLevel?.toLowerCase().split('/')[0].trim() || null,
+    learning_goals: draft.learningGoals.split(/[\n,]/).map(s => s.trim()).filter(Boolean)
+  };
+}
+
+async function saveDraftGroups(draft) {
+  const names = draft.groups.map(g => g.name.trim());
+  if (new Set(names).size !== names.length) throw new Error('Give each group a distinct name before saving.');
+  const current = await groupApi.list(draft.apiCourseId);
+  for (const group of draft.groups) {
+    const savedGroup = current.find(g => g.id === group.apiGroupId) || current.find(g => g.name === group.name);
+    const saved = await groupApi.save(draft.apiCourseId, savedGroup?.id, {
+      name: group.name, weekday: group.weekday || null, start_time: group.startTime || null,
+      start_date: group.startDate || null, schedule_description: group.schedule || null,
+      session_duration_minutes: group.duration ? Number(group.duration) : null
+    });
+    group.apiGroupId = saved.id;
+  }
 }

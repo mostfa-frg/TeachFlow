@@ -1,10 +1,9 @@
+const apiEvents = new EventTarget();
+
 async function apiRequest(path, options = {}) {
   const response = await fetch('/api/v1' + path, options);
-  if (response.headers.get('X-TeachFlow-Demo')==='recorded' && !document.getElementById('fixture-mode')) {
-    const banner=document.createElement('p');
-    banner.id='fixture-mode';
-    banner.textContent='Synthetic demonstration · recorded provider responses';
-    document.body.prepend(banner);
+  if (response.headers.get('X-TeachFlow-Demo') === 'recorded') {
+    apiEvents.dispatchEvent(new Event('recorded-demo'));
   }
   if (response.status === 204) return null;
   const data = await response.json().catch(() => null);
@@ -50,3 +49,41 @@ function jsonRequest(path, method, value) {
 function askInstructor(course,group,question) {
   return jsonRequest('/courses/'+course+'/assistant','POST',{group_id:group,question});
 }
+
+const courseApi = {
+  list: () => apiRequest('/courses'),
+  save(id, course) {
+    return id ? jsonRequest('/courses/'+id, 'PUT', course) : jsonRequest('/courses', 'POST', course);
+  },
+  remove: id => apiRequest('/courses/'+id, {method:'DELETE'}),
+  materials: id => apiRequest(`/courses/${id}/materials`),
+  upload(id, file) {
+    const body = new FormData();
+    body.append('file', file);
+    return apiRequest(`/courses/${id}/materials`, {method:'POST', body});
+  },
+  deleteMaterial: (course, material) => apiRequest(`/courses/${course}/materials/${material}`, {method:'DELETE'}),
+  approvals: id => apiRequest(`/courses/${id}/approvals`),
+  history: id => apiRequest(`/courses/${id}/history`)
+};
+
+const groupApi = {
+  list: course => apiRequest(`/courses/${course}/groups`),
+  save(course, group, fields) {
+    const path = `/courses/${course}/groups`;
+    return group ? jsonRequest(path+'/'+group, 'PUT', fields) : jsonRequest(path, 'POST', fields);
+  },
+  remove: (course, group) => apiRequest(`/courses/${course}/groups/${group}`, {method:'DELETE'}),
+  overview: id => apiRequest(`/groups/${id}/overview`),
+  savedProgress: id => apiRequest(`/groups/${id}/progress`),
+  progress: (group, session, value) => jsonRequest(`/groups/${group}/sessions/${session}/progress`, 'PUT', value)
+};
+
+const roadmapApi = {
+  read: id => apiRequest('/roadmaps/'+id),
+  approved: course => apiRequest(`/courses/${course}/roadmaps/approved`),
+  copyApproved: course => apiRequest(`/courses/${course}/roadmaps/draft-from-approved`, {method:'POST'}),
+  generate: (course, key) => apiRequest(`/courses/${course}/roadmaps/generate`, {method:'POST', headers:{'Idempotency-Key':key}}),
+  edit: (id, proposal) => jsonRequest('/roadmaps/'+id, 'PUT', proposal),
+  approve: id => apiRequest(`/roadmaps/${id}/approve`, {method:'POST'})
+};
