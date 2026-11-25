@@ -1,0 +1,13 @@
+# Copy this file to .env in the repository root for local settings.
+# Start the server from backend/ so these relative paths resolve there.
+DATABASE_URL=sqlite:///./data/teachflow.db
+TEACHFLOW_DATA_DIR=./data
+MAX_UPLOAD_BYTES=10485760
+
+# Leave the key blank for the offline demo.
+LLM_API_KEY=
+# Set these together when configuring an approved provider.
+# LLM_BASE_URL=
+# LLM_MODEL=
+LLM_API_STYLE=chat_completions
+LLM_TIMEOUT_SECONDS=60
