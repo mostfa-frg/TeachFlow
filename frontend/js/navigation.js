@@ -9,7 +9,7 @@ function sourceElement(node) {
 function nodeKey(node) {
   const el = sourceElement(node);
   if (!el.dataset) return '';
-  return el.id || el.dataset.key || el.dataset.group ||
+  return el.dataset.record || el.id || el.dataset.key || el.dataset.group ||
     [el.dataset.action, el.dataset.id, el.dataset.index, el.dataset.type].filter(Boolean).join('/');
 }
 
@@ -38,7 +38,7 @@ function syncElement(current, next) {
 }
 
 function syncChildren(parent, template) {
-  const before = measureList(parent, Array.from(template.children || [], nodeKey));
+  const before = measureList(parent, template);
   const available = Array.from(parent.childNodes);
   const keyed = new Map(available.filter(nodeKey).map(n => [nodeKey(n), n]));
   let cursor = parent.firstChild;
@@ -79,4 +79,60 @@ function rememberPage(content, key) {
   position.y = window.scrollY;
   if (graph) Object.assign(position, {x:graph.scrollLeft, top:graph.scrollTop, zoom:Number(inner.dataset.zoom || 1)});
   pagePositions.set(key, position);
+}
+
+// Keep local edits while navigating. A changed server value takes precedence on return.
+const fieldDrafts = new Map();
+const editableFields = 'input:not([type=file]), textarea, select';
+function fieldKey(field, page) {
+  const row = field.closest('[data-group],[data-item],[data-key],fieldset[data-index]');
+  const record = field.closest('[data-record]')?.dataset.record;
+  return JSON.stringify([record || page, row && nodeKey(row), row?.dataset.item, row?.dataset.index,
+    field.id || field.name || field.dataset.gfield || field.getAttribute('aria-label') || field.type]);
+}
+
+function fieldValue(field, initial) {
+  if (field.tagName !== 'SELECT') return initial ? field.defaultValue : field.value;
+  const values = Array.from(field.options).filter(o => initial ? o.defaultSelected : o.selected).map(o => o.value);
+  if (initial && !values.length && !field.multiple && field.options.length) values.push(field.options[0].value);
+  return JSON.stringify(values);
+}
+
+function rememberFields(root, page) {
+  for (const field of root.querySelectorAll(editableFields)) {
+    if (field.closest('#assistant-workspace') || field.matches(':disabled,[readonly]')) continue;
+    const key = fieldKey(field,page), initial = fieldValue(field,true), value = fieldValue(field,false);
+    if (initial === value) fieldDrafts.delete(key);
+    else fieldDrafts.set(key,{initial,value});
+  }
+}
+
+function restoreFields(root, page) {
+  for (const field of root.querySelectorAll(editableFields)) {
+    const key=fieldKey(field,page), draft=fieldDrafts.get(key);
+    if (!draft) continue;
+    fieldDrafts.delete(key);
+    if (field.matches(':disabled,[readonly]') || draft.initial !== fieldValue(field,true)) continue;
+    if (field.tagName === 'SELECT') {
+      const values = JSON.parse(draft.value);
+      for (const option of field.options) option.selected=values.includes(option.value);
+      if(field.id==='session-citations')field.dataset.edited='true';
+      const label=field.closest('.tf-select')?.querySelector('.tf-select-value');
+      if(label)label.textContent=field.selectedOptions[0]?.textContent || 'Choose an option';
+    } else if (field.value!==draft.value) field.value=draft.value;
+  }
+}
+
+function rememberFocus(content, key) {
+  const field=document.activeElement;
+  if (!content.contains(field) || !field.matches(editableFields)) return;
+  return {field, key:fieldKey(field,key), start:field.selectionStart, end:field.selectionEnd};
+}
+
+function restoreFocus(content, key, bookmark) {
+  if (!bookmark || bookmark.field.isConnected) return;
+  const field=[...content.querySelectorAll(editableFields)].find(el=>fieldKey(el,key)===bookmark.key);
+  if (!field || field.disabled) return;
+  field.focus({preventScroll:true});
+  if (bookmark.start!=null) field.setSelectionRange(bookmark.start, bookmark.end);
 }

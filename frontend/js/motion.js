@@ -20,10 +20,7 @@ function switchScreen(key, direction, paint) {
     transition.ready.catch(() => {}); // A newer navigation can skip this snapshot.
   } else {
     paint();
-    document.querySelector('.content').animate([
-      {opacity:0, transform:'translateX(' + direction * 9 + 'px)'},
-      {opacity:1, transform:'none'}
-    ], easeOut);
+    document.querySelector('.content')?.firstElementChild?.classList.add('screen-arriving');
   }
 }
 
@@ -47,9 +44,10 @@ function retiringCopy(element, bounds, transform) {
   fadeAway(copy, transform);
 }
 
-function measureList(parent, nextKeys) {
+function measureList(parent, template) {
   if (motionPreference.matches || !parent.isConnected || !parent.matches?.('.groups,.files,.goal-editor')) return;
   const children = [...parent.children];
+  const nextKeys = Array.from(template.children, nodeKey);
   if (children.map(nodeKey).join('|') === nextKeys.join('|')) return;
   return new Map(children.map(el => [el, el.getBoundingClientRect()]));
 }

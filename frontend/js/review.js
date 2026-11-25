@@ -36,6 +36,7 @@ function mountReview(root, route, escape, changed) {
 
   function showReview(record) {
     review = record;
+    body.dataset.record='review/'+record.id;
     const locked = review.state==='approved';
     body.innerHTML = `<h2>${escape(review.title)} · transcript review</h2><p>${modeLabel(review.mode)} · ${escape(review.state)}</p>
       <details><summary>Transcript · ${escape(review.filename)}</summary><pre style="white-space:pre-wrap">${escape(review.transcript)}</pre></details>
@@ -45,6 +46,7 @@ function mountReview(root, route, escape, changed) {
       <div>${f.evidence.length?f.evidence.map(e=>`<blockquote>${escape(e.snippet)} <small>(chars ${e.start}–${e.end})</small></blockquote>`).join(''):'No evidence found.'}</div>
       ${locked?'':`<label>Evidence ranges, one start:end per line<textarea name="ranges" placeholder="0:35">${f.evidence.map(e=>e.start+':'+e.end).join('\n')}</textarea></label>`}</fieldset>`).join('')}
       ${locked?'<button class="btn primary" id="package">Open follow-up package</button>':'<button class="btn" id="save-findings">Save findings</button> <button class="btn primary" id="approve-review">Approve findings</button>'}`;
+    if(root.isConnected)restoreFields(body,mountedPage);
     async function save(approve) {
       const findings = [...body.querySelectorAll('fieldset')].map(field=>{
         const evidence=field.querySelector('[name=ranges]').value.split(/\n/).filter(s=>s.trim()).map(range=>{
@@ -68,10 +70,12 @@ function mountReview(root, route, escape, changed) {
 
   function showPackage(record, unsaved={}) {
     bundle = record;
+    body.dataset.record='package/'+record.id;
     body.innerHTML = `<h2>Follow-up package</h2><p>${modeLabel(bundle.mode)} · ${escape(bundle.state)}</p>`+
       Object.entries(bundle.items).map(([key,item])=>`<section class="group" data-item="${escape(key)}"><label>${escape(key.replace('_',' '))} · ${escape(item.state)}
         <textarea ${item.state==='approved'?'readonly':''}>${escape(unsaved[key]??item.text)}</textarea></label>
         ${item.state==='approved'?'<button class="btn" data-copy>Copy</button>':'<button class="btn" data-save>Save draft</button> <button class="btn primary" data-approve>Approve item</button>'}</section>`).join('');
+    if(root.isConnected)restoreFields(body,mountedPage);
     body.querySelectorAll('[data-item] button').forEach(button=>button.onclick=()=>perform(async()=>{
       const section=button.closest('[data-item]'), key=section.dataset.item, text=section.querySelector('textarea').value;
       if (button.hasAttribute('data-copy')) { await navigator.clipboard.writeText(text); return; }

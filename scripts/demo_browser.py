@@ -195,6 +195,9 @@ def verify(url, course):
             page.get_by_role("button", name="3. Unsaved session title")
         ).to_be_visible()
         assert not errors, errors
+        from navigation_browser import verify_navigation
+
+        verify_navigation(browser, url)
         browser.close()
         print(
             "PASS · Chromium setup, regeneration, toast typing, keyboard list, mobile list, reviews, approvals, assistant retry and citations"

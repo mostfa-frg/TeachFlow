@@ -1,4 +1,5 @@
 const assistantThreads = new Map();
+const assistantDrafts = new Map();
 
 function mountAssistant(root,course,group,escape) {
   if (!course?.apiCourseId || !group) {
@@ -13,6 +14,9 @@ function mountAssistant(root,course,group,escape) {
     <textarea required maxlength="1500" name="question" placeholder="Which prerequisites does this group still need?"></textarea></label>
     <button class="btn primary">Ask</button></form><div role="status"></div>`;
   const log=root.querySelector('[role=log]'), form=root.querySelector('form'), status=root.querySelector('[role=status]');
+  const questionField=form.elements.question;
+  questionField.value=assistantDrafts.get(key) || '';
+  questionField.oninput=()=>assistantDrafts.set(key,questionField.value);
   function paint() {
     log.innerHTML=thread.map(row=>`<article class="group"><h3>${escape(row.question)}</h3>
       <p style="white-space:pre-line">${escape(row.answer)}</p>
@@ -28,9 +32,11 @@ function mountAssistant(root,course,group,escape) {
     status.textContent='Searching course evidence…';
     try {
       const response=await askInstructor(course.id,group.id,question);
-      thread.push({question,...response}); paint(); form.reset(); status.textContent='';
+      thread.push({question,...response}); paint();
+      if (assistantDrafts.get(key)===questionField.value) assistantDrafts.delete(key);
+      form.reset(); status.textContent='';
     } catch (error) {
       status.textContent=error.message+' Press Ask to retry.';
-    } finally { form.inert=false; form.elements.question.focus(); }
+    } finally { form.inert=false; if(root.isConnected)questionField.focus(); }
   };
 }
