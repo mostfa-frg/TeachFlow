@@ -12,7 +12,7 @@
 - **B. Adopt Frappe Learning as the UI base.** Reuse roles, course authoring and batch scheduling. Budget for learner-flow restrictions, license review, DocType extensions, identity integration and additional operations. High integration risk.
 - **C. Build a new custom React/TypeScript shell over the existing API.** More structure for complex screens, with a new build chain and parity work for every replaced workflow. Medium–high integration risk.
 
-**Recommendation.** A. The existing shell is already instructor-oriented and exercises real endpoints. The [spike](architecture/UI_BASE_SPIKE.md) identifies a backend graph mismatch shared by all three choices.
+**Recommendation.** A. The existing shell is already instructor-oriented and exercises real endpoints. The [spike](https://github.com/mostfa-frg/TeachFlow/blob/580fac6c9c1da89d12e5ddf7483fbbc50d380dee/docs/architecture/UI_BASE_SPIKE.md) identifies a backend graph mismatch shared by all three choices.
 
 **Owner decision, 22 November 2026.** `APPROVE A1: A`. Extend the existing instructor UI and FastAPI backend under these requirements.
 

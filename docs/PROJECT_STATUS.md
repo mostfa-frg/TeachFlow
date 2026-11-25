@@ -17,7 +17,7 @@ The entries below describe earlier revisions. Use the table above for the curren
 
 ## Historical audit · 21–22 November 2026
 
-**Phase 00 discovery delivered for review. MVP incomplete.** The baseline, branch and inventory appear in the [audit](00_AUDIT.md). The branch fills the root instructions file and adds the audit, feasibility experiment, decision and verification records. The reconciled base already contains the canonical brief, project rules and all twelve prompts. The owner approved A1 option A on 22 November 2026. PR #5 merged at 58927ec.
+**Phase 00 discovery delivered for review. MVP incomplete.** The baseline, branch and inventory appear in the [audit](https://github.com/mostfa-frg/TeachFlow/blob/580fac6c9c1da89d12e5ddf7483fbbc50d380dee/docs/00_AUDIT.md). The branch fills the root instructions file and adds the audit, feasibility experiment, decision and verification records. The reconciled base already contains the canonical brief, project rules and all twelve prompts. The owner approved A1 option A on 22 November 2026. PR #5 merged at 58927ec.
 
 | Workflow at the audited revision | Status | What an instructor can rely on |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ The entries below describe earlier revisions. Use the table above for the curren
 | Attention dashboard | PARTIAL | Group completion is available. The approvals badge is hard-coded. A reliable approvals queue, upcoming occurrences and evidence-driven alerts remain outstanding. |
 | Deployment | PARTIAL | Local FastAPI/SQLite and Alembic path exists. PostgreSQL operations, production isolation, release pipeline and restore drill remain unverified. |
 
-[Tests and limits](TEST_REPORT.md) · [Requirement-by-requirement status](REQUIREMENTS_TRACEABILITY.md) · [Gate A1](DECISIONS.md)
+[Tests and limits](TEST_REPORT.md) · [Requirement-by-requirement status](https://github.com/mostfa-frg/TeachFlow/blob/580fac6c9c1da89d12e5ddf7483fbbc50d380dee/docs/REQUIREMENTS_TRACEABILITY.md) · [Gate A1](DECISIONS.md)
 
 ## Historical roadmap UI follow-up · 22 November 2026
 

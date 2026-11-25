@@ -23,4 +23,4 @@ Follow the [six-week scope and demo](MVP_SCOPE.md). The existing shell and FastA
 | Review costs less time than drafting manually | Compare active setup time and correction rate with a manual baseline. Preserve evidence and rejection even if output quality is low. |
 | A six-week pilot fits available capacity | Team size, budget and hosting remain unconfirmed. Defer optional work, then escalate any threatened P0 criterion. |
 
-[Proposed pilot measurements](SUCCESS_METRICS.md) · [Engineering risks](../RISKS.md) · [Testable requirements and glossary](../requirements/TRACEABILITY.md)
+[Proposed pilot measurements](SUCCESS_METRICS.md) · [Engineering risks](https://github.com/mostfa-frg/TeachFlow/blob/580fac6c9c1da89d12e5ddf7483fbbc50d380dee/docs/RISKS.md) · [Testable requirements and glossary](../requirements/TRACEABILITY.md)

@@ -1,6 +1,6 @@
 # P0 requirements and verification catalogue
 
-Under scope decision D1, TF-01 (authentication/ownership) is out of scope and TF-13 is replaced with a localhost end-to-end demo; the original acceptance text remains as historical planning where explicitly labeled. This indexed catalogue combines functional requirements, stories, business rules, acceptance criteria and traceability. Each row links the Phase 00 TF identifier to the detailed case below. Planned checks describe future implementation acceptance. Current evidence remains in the [baseline](../REQUIREMENTS_TRACEABILITY.md).
+Under scope decision D1, TF-01 (authentication/ownership) is out of scope and TF-13 is replaced with a localhost end-to-end demo; the original acceptance text remains as historical planning where explicitly labeled. This indexed catalogue combines functional requirements, stories, business rules, acceptance criteria and traceability. Each row links the Phase 00 TF identifier to the detailed case below. Planned checks describe future implementation acceptance. Current evidence remains in the [baseline](https://github.com/mostfa-frg/TeachFlow/blob/580fac6c9c1da89d12e5ddf7483fbbc50d380dee/docs/REQUIREMENTS_TRACEABILITY.md).
 
 | Baseline | Requirement / story / acceptance | Phase | Test type |
 | --- | --- | --- | --- |
