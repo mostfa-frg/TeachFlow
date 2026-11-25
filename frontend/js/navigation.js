@@ -26,6 +26,11 @@ function syncElement(current, next) {
   for (const [name, value] of Object.entries(attrs)) {
     if (previous[name] !== value) current.setAttribute(name, value);
   }
+  // An edited input keeps its live value when only its default attribute changes.
+  // Apply an explicit model change, for example when a goal moves into this row.
+  if (current.tagName === 'INPUT' && 'value' in attrs && previous.value !== attrs.value && current.value !== attrs.value) {
+    current.value = attrs.value;
+  }
   renderedAttributes.set(current, attrs);
   if (next.hasAttribute('data-counter')) {
     if(current.dataset.target!==next.textContent)countTo(current,next.textContent);
@@ -76,7 +81,8 @@ function rememberPage(content, key) {
   const graph = content.querySelector('#roadmap-scroll');
   const inner = content.querySelector('#roadmap-inner');
   const position = pagePositions.get(key) || {};
-  position.y = window.scrollY;
+  // A loading placeholder may be shorter than the saved page.
+  if (!content.querySelector('.skeleton-list')) position.y = window.scrollY;
   if (graph) Object.assign(position, {x:graph.scrollLeft, top:graph.scrollTop, zoom:Number(inner.dataset.zoom || 1)});
   pagePositions.set(key, position);
 }

@@ -97,6 +97,8 @@ def run():
                     page.locator("#link-kind").select_option("extends", force=True)
                     page.locator("#link-note").fill("Edited in the browser")
                     page.locator("[data-action=add-prereq]").click()
+                    assert page.locator("#prereq-picker").input_value() == ""
+                    assert page.locator("#link-note").input_value() == ""
                     page.locator("[data-action=approve]").click()
                     page.locator("[data-action=edit-roadmap]").wait_for()
                     page.reload()

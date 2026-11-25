@@ -1,4 +1,17 @@
-# Local demo verification · 24 November 2026
+# Navigation verification · 25 November 2026
+
+The instructor shell now keeps its sidebar, topbar and unchanged controls mounted. Chromium exercised native View Transitions, the CSS fallback with the native API disabled, and an emulated reduced-motion preference. The browser checks the same DOM nodes remain connected, unsent text survives navigation, and a delayed failed refresh leaves the focused input and its selection intact. It also checks document scroll after a skeleton, graph zoom and pan on return, forward/back wizard direction and editing a list of goals.
+
+| Command from the repository root | Result |
+| --- | --- |
+| `python -m pytest -q` | 54 passed, one upstream Starlette TestClient warning |
+| `node --test frontend/tests/*.cjs` | 20 passed |
+| `python scripts/demo_walkthrough.py --browser --port 0` | Synthetic HTTP walkthrough, instructor browser workflow and all three navigation modes passed |
+| `PYTHONPATH=backend python backend/tests/graph_browser.py` | Three typed links survived edit, approval and page refresh |
+
+The browser runs used headless Chromium on Linux. Safari, Firefox, Windows and physical-device frame rates were not measured. The scenarios use recorded synthetic responses. Live AI quality remains unverified.
+
+## Local demo verification · 24 November 2026
 
 Tests ran on Linux with Python 3.12.14, Node 24.22.3, SQLite and headless Chromium. HTTP and browser runs used disposable databases and synthetic files. Provider responses came from stubs or labelled fixtures.
 

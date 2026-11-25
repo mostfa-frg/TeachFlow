@@ -51,11 +51,25 @@ def verify_navigation(browser, url):
             expect(question).to_have_value("Keep my unsent question")
             assert page.evaluate("window.chromeNodes.every(el => el.isConnected)")
             if mode == "fallback":
+                page.set_viewport_size({"width": 820, "height": 350})
+                materials = page.locator('.nav [data-action="materials"]')
+                materials.click()
+                expect(page.get_by_role("heading", name="functions.md")).to_be_visible()
+                offset = page.evaluate("() => { window.scrollTo(0, 220); return window.scrollY; }")
+                assert offset > 0
+                # Programmatic activation keeps the toolbar from scrolling into view first.
+                page.locator('.nav [data-action="assistant"]').evaluate("button => button.click()")
                 held = []
                 page.route("**/api/v1/courses", lambda route: held.append(route), times=1)
                 with page.expect_request(lambda req: req.url.endswith("/api/v1/courses")):
-                    page.locator('.nav [data-action="materials"]').click()
+                    materials.evaluate("button => button.click()")
                 expect(page.locator('.skeleton-row').first).to_be_visible()
+                held.pop().continue_()
+                expect(page.get_by_role("heading", name="functions.md")).to_be_visible()
+                assert page.evaluate("window.scrollY") == offset
+                page.route("**/api/v1/courses", lambda route: held.append(route), times=1)
+                with page.expect_request(lambda req: req.url.endswith("/api/v1/courses")):
+                    materials.click()
                 page.locator('.nav [data-action="roadmap"]').click()
                 page.locator('[data-action="new-course"]').click()
                 name = page.locator('#name')

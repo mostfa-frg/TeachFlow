@@ -181,6 +181,13 @@ def verify(url, course):
             generated
         )
         page.locator("[data-action=select-node][data-id=practice]").click()
+        goals = page.locator(".goal-line-input")
+        action("add-goal").click()
+        goals.first.fill("Remove this edited goal")
+        goals.last.fill("Keep this edited goal")
+        action("remove-goal").click()
+        expect(goals).to_have_count(1)
+        expect(goals.first).to_have_value("Keep this edited goal")
         page.locator("#edit-title").fill("Unsaved session title")
         action("delete-topic").click()
         expect(page.locator(".toast").first).to_be_visible()
