@@ -1,10 +1,10 @@
-function mountReview(root, route, escape, changed) {
+function mountReview(root, route, escape, reportFailure, changed) {
   const status = document.createElement('p');
   status.setAttribute('role','status');
   const body = document.createElement('div');
   root.replaceChildren(status,body);
   let review, bundle, lastAction;
-  async function perform(action) {
+  async function perform(label, action) {
     lastAction = action;
     status.textContent = 'Working…';
     body.inert = true;
@@ -12,10 +12,10 @@ function mountReview(root, route, escape, changed) {
       await action();
       status.textContent = '';
     } catch (error) {
-      status.textContent = error.message + ' ';
+      status.textContent = reportFailure(label,error) + ' ';
       const retry = document.createElement('button');
       retry.textContent = 'Retry';
-      retry.onclick = () => perform(lastAction);
+      retry.onclick = () => perform(label,lastAction);
       status.append(retry);
     } finally { body.inert = false; }
   }
@@ -25,13 +25,13 @@ function mountReview(root, route, escape, changed) {
     body.innerHTML = `<h2>Session transcripts</h2><label>Synthetic transcript (TXT or MD, up to 100 KB)
       <input id="transcript-file" type="file" accept=".txt,.md"></label><button type="button" class="btn" id="upload-transcript">Review transcript</button>
       ${rows.map(r=>`<p><button class="btn" data-review="${escape(r.id)}">${escape(r.filename)} · ${escape(r.state)}</button></p>`).join('')||'<p>No transcript reviews yet.</p>'}`;
-    body.querySelector('#upload-transcript').onclick = () => perform(async()=>{
+    body.querySelector('#upload-transcript').onclick = () => perform('Could not review the transcript', async()=>{
       const file = body.querySelector('input').files[0];
       if (!file) throw new Error('Choose a transcript first.');
       showReview(await reviewApi.upload(route.group,route.session,file));
       await changed();
     });
-    body.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>perform(async()=>showReview(await reviewApi.read(b.dataset.review))));
+    body.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>perform('Could not open the transcript review', async()=>showReview(await reviewApi.read(b.dataset.review))));
   }
 
   function showReview(record) {
@@ -61,10 +61,10 @@ function mountReview(root, route, escape, changed) {
       showReview(approve ? await reviewApi.approve(saved.id) : saved);
       await changed();
     }
-    if (locked) body.querySelector('#package').onclick=()=>perform(async()=>{showPackage(await reviewApi.draft(review.id));await changed();});
+    if (locked) body.querySelector('#package').onclick=()=>perform('Could not open the follow-up package', async()=>{showPackage(await reviewApi.draft(review.id));await changed();});
     else {
-      body.querySelector('#save-findings').onclick=()=>perform(()=>save(false));
-      body.querySelector('#approve-review').onclick=()=>perform(()=>save(true));
+      body.querySelector('#save-findings').onclick=()=>perform('Could not save the findings', ()=>save(false));
+      body.querySelector('#approve-review').onclick=()=>perform('Could not approve the findings', ()=>save(true));
     }
   }
 
@@ -76,7 +76,7 @@ function mountReview(root, route, escape, changed) {
         <textarea ${item.state==='approved'?'readonly':''}>${escape(unsaved[key]??item.text)}</textarea></label>
         ${item.state==='approved'?'<button class="btn" data-copy>Copy</button>':'<button class="btn" data-save>Save draft</button> <button class="btn primary" data-approve>Approve item</button>'}</section>`).join('');
     if(root.isConnected)restoreFields(body,mountedPage);
-    body.querySelectorAll('[data-item] button').forEach(button=>button.onclick=()=>perform(async()=>{
+    body.querySelectorAll('[data-item] button').forEach(button=>button.onclick=()=>perform(button.hasAttribute('data-copy')?'Could not copy the item':button.hasAttribute('data-approve')?'Could not approve the item':'Could not save the item', async()=>{
       const section=button.closest('[data-item]'), key=section.dataset.item, text=section.querySelector('textarea').value;
       if (button.hasAttribute('data-copy')) { await navigator.clipboard.writeText(text); return; }
       const pending=Object.fromEntries([...body.querySelectorAll('[data-item]')].filter(s=>s!==section).map(s=>[s.dataset.item,s.querySelector('textarea').value]));
@@ -85,7 +85,7 @@ function mountReview(root, route, escape, changed) {
     }));
   }
 
-  perform(async()=>{
+  perform('Could not load '+(route.kind==='package'?'the follow-up package':'transcript reviews'), async()=>{
     if (route.kind==='review') showReview(await reviewApi.read(route.id));
     else if (route.kind==='package') showPackage(await reviewApi.package(route.id));
     else await list();

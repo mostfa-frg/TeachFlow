@@ -1,7 +1,7 @@
 const assistantThreads = new Map();
 const assistantDrafts = new Map();
 
-function mountAssistant(root,course,group,escape) {
+function mountAssistant(root,course,group,escape,reportFailure) {
   if (!course?.apiCourseId || !group) {
     root.textContent='Create a course and select a group to ask a question.';
     return;
@@ -36,6 +36,7 @@ function mountAssistant(root,course,group,escape) {
       if (assistantDrafts.get(key)===questionField.value) assistantDrafts.delete(key);
       form.reset(); status.textContent='';
     } catch (error) {
+      reportFailure('Could not answer your question',error);
       status.textContent=error.message+' Press Ask to retry.';
     } finally { form.inert=false; if(root.isConnected)questionField.focus(); }
   };

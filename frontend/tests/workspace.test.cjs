@@ -55,3 +55,28 @@ test('benchmark inputs stay hidden until the saved targets finish loading', () =
   assert.doesNotMatch(view('error'), /data-action="save-target"/);
   assert.match(view('ready'), /value="2026-12-07"/);
 });
+
+test('missing course update identifies the stale draft only on the course save route', async () => {
+  const api = load('api', {EventTarget, Event, fetch: async () => new Response(
+    JSON.stringify({error:{message:'Course not found.'}}), {status:404}
+  )});
+  for (const [path, method, expected] of [
+    ['/courses/old','PUT',/draft points to a course missing/],
+    ['/courses/old','DELETE',/Course not found/],
+    ['/courses/old/groups/g','PUT',/Course not found/]
+  ]) {
+    await assert.rejects(api.apiRequest(path,{method}), err => {
+      assert.match(api.explainFailure('Could not save changes',err),expected);
+      return true;
+    });
+  }
+});
+
+test('validation names the field and connection failures explain how to retry', async () => {
+  const api = load('api', {EventTarget, Event, fetch: async () => new Response(
+    JSON.stringify({error:{details:[{loc:['body','start_time'],msg:'Invalid time'}]}}), {status:422}
+  )});
+  await assert.rejects(api.apiRequest('/groups'), /start time: Invalid time/);
+  api.fetch = async () => {throw new TypeError('Failed to fetch')};
+  await assert.rejects(api.apiRequest('/courses'), /local server is running/);
+});

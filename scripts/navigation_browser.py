@@ -90,6 +90,12 @@ def verify_navigation(browser, url):
                 page.locator('[data-action="back"]').click()
                 expect(name).to_be_visible()
                 assert page.evaluate("document.documentElement.style.getPropertyValue('--slide')") == "-9px"
+                page.route("**/api/v1/courses/*", lambda route: route.fulfill(
+                    status=404, json={"error": {"message": "Course not found."}}
+                ), times=1)
+                page.locator('[data-action="continue"]').click()
+                expect(page.locator(".toast")).to_contain_text("course missing from the current database")
+                expect(name).to_have_value("Navigation rehearsal")
             if mode == "native" and page.evaluate("Boolean(document.startViewTransition)"):
                 assert page.evaluate("window.transitionCalls > 0")
             if mode == "reduced":

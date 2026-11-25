@@ -1,18 +1,28 @@
 const apiEvents = new EventTarget();
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch('/api/v1' + path, options);
+  let response;
+  try {
+    response = await fetch('/api/v1' + path, options);
+  } catch (cause) {
+    throw new Error('The browser could not reach TeachFlow. Check that the local server is running, then retry.', {cause});
+  }
   if (response.headers.get('X-TeachFlow-Demo') === 'recorded') {
     apiEvents.dispatchEvent(new Event('recorded-demo'));
   }
   if (response.status === 204) return null;
   const data = await response.json().catch(() => null);
   if (!response.ok) {
-    const detail = data?.error?.details?.[0]?.msg;
-    const error = new Error(detail || data?.error?.message || 'Request failed (' + response.status + ')');
+    const problem = data?.error?.details?.[0];
+    const field = problem?.loc?.filter(part => part !== 'body').join(' → ').replaceAll('_',' ');
+    const detail = field ? field + ': ' + problem.msg : problem?.msg;
+    const error = new Error(detail || data?.error?.message || (typeof data?.detail === 'string' && data.detail) || 'Request failed (' + response.status + ')');
     error.status = response.status;
+    error.path = path;
+    error.method = options.method || 'GET';
     throw error;
   }
+  if (data === null) throw new Error('TeachFlow returned an unreadable response. Check the server terminal and retry.');
   return data;
 }
 
@@ -87,3 +97,25 @@ const roadmapApi = {
   edit: (id, proposal) => jsonRequest('/roadmaps/'+id, 'PUT', proposal),
   approve: id => apiRequest(`/roadmaps/${id}/approve`, {method:'POST'})
 };
+
+function explainFailure(action, error) {
+  if (error.status === 404 && error.method === 'PUT' && /^\/courses\/[^/]+$/.test(error.path)) {
+    return action + '. This draft points to a course missing from the current database. Open the original database or copy your fields into a new course in a private window.';
+  }
+  const guidance = {
+    404: 'Refresh to see which records are still available.',
+    409: 'Check the current record before trying again.',
+    413: 'Choose a smaller file.',
+    415: 'Choose a supported file format.',
+    422: 'Correct the indicated value and try again.',
+    429: 'Wait a moment before retrying.',
+    500: 'Check the TeachFlow server terminal for details before retrying.',
+    502: 'A service TeachFlow called failed. Check the server terminal for details and retry.',
+    503: 'Check the local server and any provider configuration mentioned above, then retry.',
+    504: 'The service timed out. Check its status and retry.'
+  };
+  const reason = error.name === 'NotAllowedError'
+    ? 'Clipboard access was denied. Allow clipboard access or select and copy the text manually.'
+    : error.message || 'TeachFlow did not provide a reason.';
+  return [action + '.', /[.!?]$/.test(reason) ? reason : reason + '.', guidance[error.status]].filter(Boolean).join(' ');
+}
